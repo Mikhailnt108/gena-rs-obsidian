@@ -1,0 +1,2975 @@
+# WORKLOG
+
+## 2026-03-19
+- В `gena-rs` завершён реальный merge:
+  - `upstream/main -> chore/update-upstream-on-gena-arch`
+- Конфликты были разрешены в hotspots:
+  - `.github/workflows/rust-release.yml`
+  - `codex-rs/app-server-protocol/schema/json/ClientRequest.json`
+  - `codex-rs/cli/src/mcp_cmd.rs`
+  - `codex-rs/exec/Cargo.toml`
+  - `codex-rs/exec/src/lib.rs`
+  - `codex-rs/tui/src/app.rs`
+  - `codex-rs/tui/src/chatwidget.rs`
+  - `codex-rs/tui/src/slash_command.rs`
+- После merge были добиты compile-time несовместимости от upstream API drift:
+  - `ModelInfo.supports_image_detail_original`
+  - `ResponseEvent::Completed`
+  - `Op::OverrideTurnContext.service_tier`
+  - TUI feature/model/slash-command integration хвосты
+- Подтверждена проверка:
+  - `cargo check -p codex-exec -p codex-tui -p codex-app-server-protocol` PASS
+- Создан merge commit:
+  - `9bc9e5253` — `Merge upstream/main into chore/update-upstream-on-gena-arch`
+- Push полного diff через текущий OAuth remote был отклонён из-за отсутствия `workflow` scope на `.github/workflows/*`.
+- Зафиксирован и применён workaround:
+  - workflow-файлы возвращены к состоянию `origin/chore/update-upstream-on-gena-arch`
+  - создан follow-up commit:
+    - `ae5f2141f` — `sync(upstream): drop workflow changes for oauth push`
+- После этого ветка успешно запушена в `origin/chore/update-upstream-on-gena-arch`.
+
+## 2026-03-19
+- В `codex-rs` создана и запушена отдельная ветка для реального апдейта апстрима:
+- `chore/update-upstream-on-gena-arch`
+- Ветка создана поверх финального architecture checkpoint:
+  - `4c8e65155` — `refactor(gena): split runtime bootstrap onboarding module`
+- На новой ветке начат merge:
+  - `upstream/main -> chore/update-upstream-on-gena-arch`
+- Перед merge подтверждена divergence:
+  - `upstream/main`: `105` commits
+  - `chore/update-upstream-on-gena-arch`: `187` commits
+- Merge пока не завершён; локально сохраняется unresolved state.
+- Текущие conflict hotspots:
+  - `.github/workflows/rust-release.yml`
+  - `codex-rs/app-server-protocol/schema/json/ClientRequest.json`
+  - `codex-rs/cli/src/mcp_cmd.rs`
+  - `codex-rs/exec/Cargo.toml`
+  - `codex-rs/exec/src/lib.rs`
+  - `codex-rs/tui/src/app.rs`
+  - `codex-rs/tui/src/chatwidget.rs`
+  - `codex-rs/tui/src/slash_command.rs`
+- Главный практический вывод этого checkpoint:
+  - merge pressure заметен, но конфликтная зона не размазана хаотично по всем новым `gena-runtime` boundaries
+  - это первый реальный тест, подтверждающий полезность предыдущей архитектурной normalization
+
+## 2026-03-19
+- Формально закрыта текущая `Plugin Platform Expansion` phase как завершённый архитектурный checkpoint.
+- Зафиксировано, что к моменту closeout:
+  - Gena-owned runtime/platform layers собраны
+  - plugin platform имеет capability axes, execution stack, lifecycle layer, dynamic loader и registry/distribution surface
+  - `gena-runtime` нормализован по отдельным boundary-модулям до уровня, достаточного для честного phase closeout
+- Отдельно зафиксировано, что после `4c8e65155` новые code splits уже дают diminishing returns и не являются обязательными для закрытия текущей задачи.
+- Следующий шаг, если продолжать, должен открываться как новая отдельная фаза, а не как продолжение текущего cleanup/platform-boundary цикла.
+
+## 2026-03-19
+- На `codex-rs/chore/update-arch` зафиксирован runtime bootstrap onboarding module split:
+  - `4c8e65155` — `refactor(gena): split runtime bootstrap onboarding module`
+- В `gena-runtime` создан новый модуль:
+  - `src/bootstrap_onboarding.rs`
+- Туда вынесены:
+  - trust/login/onboarding gating
+  - provider token prepare/persist
+  - TUI-only bootstrap onboarding policy
+- `src/bootstrap.rs` после split теперь больше сфокусирован на:
+  - bootstrap context prep
+  - OTEL/log_db bootstrap
+  - OSS provider planning
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-19
+- На `codex-rs/chore/update-arch` зафиксирован runtime config session module split:
+  - `c3c1cf1e9` — `refactor(gena): split runtime config session module`
+- В `gena-runtime` создан новый модуль:
+  - `src/config_session.rs`
+- Туда вынесены:
+  - session target resolution
+  - latest session lookup
+  - thread id resolution
+  - session cwd lookup
+  - turn-context cwd parsing
+- `src/config.rs` после split теперь больше сфокусирован на:
+  - config load/build/rebuild
+  - config edits/persistence
+  - policy/restrictions helpers
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-19
+- На `codex-rs/chore/update-arch` зафиксирован runtime capability-axis split:
+  - `88a9a60be` — `refactor(gena): split runtime capability axis modules`
+- В `gena-runtime` созданы новые модули:
+  - `src/capability_command.rs`
+  - `src/capability_provider.rs`
+  - `src/capability_tool.rs`
+  - `src/capability_workflow.rs`
+- Туда вынесены:
+  - per-axis plan enums
+  - per-axis resolve/require helpers
+  - registry-based planning helpers по каждой capability
+- `src/capabilities.rs` после split сведён к thin facade/re-export layer с test coverage
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-19
+- На `codex-rs/chore/update-arch` зафиксирован runtime registry parser module split:
+  - `03e793737` — `refactor(gena): split runtime registry parser module`
+- В `gena-runtime` создан новый модуль:
+  - `src/registry_parser.rs`
+- Туда вынесены:
+  - static TOML registry parsing
+  - `[index]` / `[service]` / `[response]` validation
+  - `[[packages]]` parsing
+  - package entry parsing and HTTP URL validation
+- `src/registry.rs` после split теперь сфокусирован на:
+  - inspect/search/install facade
+  - page normalization and iteration
+  - calls into `registry_parser` and `registry_service`
+- `src/registry_service.rs` переведён на parser API из нового модуля
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-14
+- На `codex-rs/chore/update-arch` зафиксирован runtime registry model module split:
+  - `a2f0f4627` — `refactor(gena): split runtime registry model module`
+- В `gena-runtime` создан новый модуль:
+  - `src/registry_model.rs`
+- Туда вынесены:
+  - registry-facing structs
+  - search result/page/page-info types
+  - resolved package types
+  - search scoring and fuzzy ranking helpers
+- `src/registry.rs` после split теперь сфокусирован на:
+  - static TOML index parsing
+  - static/search install facade
+  - parser layer
+  - high-level registry facade
+- Практический эффект:
+  - registry-facing model и search ranking теперь отделены от parser/service layers
+  - `registry.rs` перестал быть одновременно model+search+parser module
+  - registry evolution теперь можно вести отдельно по parser/service/model boundaries
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-14
+- На `codex-rs/chore/update-arch` зафиксирован runtime package archive module split:
+  - `9b62600e0` — `refactor(gena): split runtime package archive module`
+- В `gena-runtime` создан новый модуль:
+  - `src/package_archive.rs`
+- Туда вынесены:
+  - archive inspect/install/replace/uninstall
+  - remote archive URL install/inspect/replace/uninstall
+  - archive manifest parsing/validation
+  - extracted bundle resolution
+- `src/package.rs` после split теперь сфокусирован на:
+  - local library install/replace/uninstall
+  - local bundle install/replace/uninstall
+  - bundle discovery and validation helpers
+  - high-level package facade
+- Практический эффект:
+  - archive/remote installer logic теперь отделена от local package ops
+  - `package.rs` перестал быть одновременно local package + archive installer module
+  - installer evolution теперь можно вести отдельно для local and archive directions
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-14
+- На `codex-rs/chore/update-arch` зафиксирован runtime registry service module split:
+  - `f6bde621e` — `refactor(gena): split runtime registry service module`
+- В `gena-runtime` создан новый модуль:
+  - `src/registry_service.rs`
+- Туда вынесены:
+  - service-backed search
+  - auth-aware service fetch
+  - service-backed package resolution
+  - service-side paging/navigation request construction
+- `src/registry.rs` после split теперь сфокусирован на:
+  - static TOML index parsing
+  - static search/ranking
+  - registry-facing structs
+  - high-level facade
+- Практический эффект:
+  - service-backed registry logic теперь отделена от static index/parser layer
+  - `registry.rs` перестал быть одновременно parser+service client module
+  - registry evolution теперь можно вести отдельно для static и service-backed directions
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-14
+- На `codex-rs/chore/update-arch` зафиксирован runtime capabilities module split:
+  - `cbcf72943` — `refactor(gena): split runtime capabilities module`
+- В `gena-runtime` создан новый модуль:
+  - `src/capabilities.rs`
+- Туда вынесены:
+  - `RuntimeCommandDispatchPlan`
+  - `RuntimeProviderExecutionPlan`
+  - `RuntimeToolExecutionPlan`
+  - `RuntimeWorkflowExecutionPlan`
+  - registry-based capability planning helpers
+  - public per-axis `resolve/require_*` API
+- `src/execution.rs` переведён на прямой импорт capability planning из `capabilities.rs`.
+- `src/plugins.rs` после split сведён к thin compatibility shell.
+- Практический эффект:
+  - capability planning boundary теперь явный и отделён от execution/lifecycle boundary
+  - `plugins.rs` перестал быть реальным planning module
+  - runtime platform layer стал ещё чище по ответственности
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-14
+- На `codex-rs/chore/update-arch` зафиксирован runtime execution module split:
+  - `727667207` — `refactor(gena): split runtime execution module`
+- В `gena-runtime` создан новый модуль:
+  - `src/execution.rs`
+- Туда вынесены:
+  - `RuntimePluginSnapshot`
+  - `RuntimePluginLifecycle`
+  - `RuntimePreparedExecution`
+  - `RuntimePreparedExecutionTrace`
+  - `RuntimeLifecycleStage`
+  - `RuntimeLifecycleCallback`
+  - `RuntimeExecutionTarget`
+  - `RuntimeExecutionPlan`
+- `src/plugins.rs` после split теперь сфокусирован уже в основном на:
+  - capability-specific plan enums
+  - per-axis resolve/require helpers
+  - built-in command/provider/tool/workflow planning surface
+- Практический эффект:
+  - execution/lifecycle boundary теперь явный и отделён от capability planning boundary
+  - entrypoint-facing runtime execution façade теперь локализована в отдельном модуле
+  - `plugins.rs` перестал быть одновременно lifecycle+planning module
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован runtime loader module split:
+  - `84e3da007` — `refactor(gena): split runtime loader module`
+- В `gena-runtime` создан новый модуль:
+  - `src/loader.rs`
+- Туда вынесены:
+  - static built-in registry init
+  - dynamic loader discovery
+  - env/configured library and directory resolution
+  - dynamic plugin registration
+  - dynamic manifest / bundle validation
+- `src/plugins.rs` после split теперь сфокусирован уже в основном на:
+  - runtime snapshot
+  - lifecycle manager
+  - execution planning
+  - resolve/require APIs
+- Практический эффект:
+  - loader/discovery boundary теперь явный и отделён от execution/lifecycle boundary
+  - дальнейшая evolution dynamic loader story теперь локализуется в `loader.rs`
+  - `plugins.rs` перестал быть смешанным discovery+execution module
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован runtime transport module split:
+  - `cef80019f` — `refactor(gena): split runtime transport module`
+- В `gena-runtime` создан новый модуль:
+  - `src/transport.rs`
+- Туда вынесены:
+  - shared HTTP response helper
+  - text/bytes download helpers
+  - auth-env bearer handling
+  - shared `http://` / `https://` validation
+- На него переведены:
+  - `src/registry.rs`
+  - `src/package.rs`
+- Практический эффект:
+  - network/service transport logic больше не дублируется между registry и package boundary
+  - URL policy и auth-aware fetch semantics теперь локализованы в одном runtime module
+  - следующий platform evolution шаг уже можно выбирать вне transport/registry/package оси
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован runtime package module split:
+  - `31afb59bf` — `refactor(gena): split runtime package module`
+- В `gena-runtime` создан новый модуль:
+  - `src/package.rs`
+- Туда вынесены:
+  - local library install / replace / uninstall helpers
+  - bundle install / replace / uninstall helpers
+  - archive inspect / install / replace / uninstall helpers
+  - remote archive URL inspect / install / replace / uninstall helpers
+  - package-facing types:
+    - `RuntimeDynamicPluginBundleManifest`
+    - `RuntimeDynamicPluginArchive`
+  - bundle/archive discovery and validation helpers
+- `src/plugins.rs` после split теперь сфокусирован уже в основном на:
+  - dynamic loader
+  - plugin execution/lifecycle
+  - discovered runtime plugin state
+- Практический эффект:
+  - package management boundary теперь явный, а не размазан внутри общего plugins module
+  - installer/archive/remote package story локализована отдельно от execution/lifecycle story
+  - после `registry.rs` + `package.rs` split’ов runtime platform слой стал заметно яснее модульно
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован runtime registry client module split:
+  - `59f6a8ac2` — `refactor(gena): split runtime registry client module`
+- В `gena-runtime` создан новый модуль:
+  - `src/registry.rs`
+- Туда вынесены:
+  - registry/index inspect
+  - service-backed search
+  - package resolution
+  - paginator iteration/navigation/normalization
+  - auth-aware registry/service fetch helpers
+  - registry-facing types:
+    - manifest
+    - service
+    - response
+    - search page/result/iteration/page-info
+    - resolved package
+- `src/plugins.rs` после split снова уже и больше сфокусирован на:
+  - dynamic loader
+  - plugin execution/lifecycle
+  - bundle/archive/install flows
+- Практический эффект:
+  - registry service client boundary теперь явный, а не размазан внутри общего plugins module
+  - дальнейшая работа по registry/service story теперь локализуется в отдельном runtime слое
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован paginator normalization checkpoint:
+  - `b037dbd67` — `refactor(gena): normalize paginator response view`
+- В `gena-runtime` добавлены:
+  - `RuntimePluginSearchPageInfo`
+  - `inspect_runtime_plugin_search_page(...)`
+- Normalized page view теперь собирает:
+  - `page`
+  - `page_size`
+  - `total`
+  - `returned`
+  - `has_more`
+  - `next_request`
+- В `codex-cli`:
+  - `plugin-search-page` / `plugin-search-next` теперь строятся из runtime-owned normalized view, а не из raw response parsing
+- Практический эффект:
+  - paginator/service response logic стала менее ad-hoc в entrypoint
+  - richer paginator frontier теперь уже почти упёрся в diminishing returns
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован richer paginator response checkpoint:
+  - `b5764bafa` — `feat(gena): enrich paginator response metadata`
+- В `gena-runtime` `RuntimePluginRegistryResponse` расширен полями:
+  - `returned`
+  - `has_more`
+- Runtime parser теперь поддерживает optional `[response]` metadata:
+  - `returned`
+  - `has_more`
+- В `codex-cli`:
+  - `plugin-search-page` output теперь печатает:
+    - `returned`
+    - `has_more`
+- Практический эффект:
+  - paginator layer теперь передаёт не только continuation metadata, но и richer operational response context
+  - это усиливает service-backed search UX без открытия generic paginator framework
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован full page iteration checkpoint:
+  - `c52db4bb3` — `feat(gena): add full page iteration for registry search`
+- В `gena-runtime` добавлены:
+  - `RuntimePluginSearchIteration`
+  - `search_runtime_plugin_registry_index_all_pages(...)`
+- Runtime paginator теперь:
+  - итерирует page-by-page через existing navigation contract
+  - детектирует repeated request
+  - ограничивает iteration через `max_pages`
+- В `codex-cli`:
+  - `debug search-plugin-index` теперь поддерживает:
+    - `--all-pages`
+    - `--max-pages`
+  - выводит:
+    - `plugin-search-iteration`
+    - затем page-by-page `plugin-search-page`, `plugin-search-next`, `plugin-search-entry`
+- Практический эффект:
+  - search stack теперь умеет не только описывать next request, но и делать runtime-owned multi-page iteration
+  - paginator frontier добран без открытия generic pagination framework
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован next-page search navigation checkpoint:
+  - `168d9eace` — `feat(gena): add next-page search navigation`
+- В `gena-runtime` добавлены:
+  - `RuntimePluginSearchNextRequest`
+  - `resolve_runtime_plugin_search_next_request(...)`
+- Runtime теперь умеет вычислять следующий search request из:
+  - `next_page`
+  - `page_size`
+  - `next_cursor`
+- В `codex-cli`:
+  - `debug search-plugin-index` теперь печатает:
+    - `plugin-search-next`
+      - `page`
+      - `page_size`
+      - `cursor`
+- Практический эффект:
+  - search stack теперь не только page-aware и cursor-aware, но и умеет явно формировать next-request contract
+  - следующий page loop теперь может строиться поверх runtime-owned navigation contract, а не поверх ad-hoc response parsing в CLI
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован cursor-aware registry search checkpoint:
+  - `7ad1759fa` — `feat(gena): add cursor-aware registry search`
+- В `gena-runtime` добавлены:
+  - `search_runtime_plugin_registry_index_with_navigation(...)`
+  - optional service contract field:
+    - `cursor_param`
+  - optional response metadata field:
+    - `next_cursor`
+- Existing `search_runtime_plugin_registry_index_with_paging(...)` сохранён как совместимый wrapper.
+- В `codex-cli`:
+  - `debug search-plugin-index` теперь поддерживает:
+    - `--cursor`
+  - `debug inspect-plugin-index` теперь печатает:
+    - `cursor_param`
+  - `plugin-search-page` output теперь включает:
+    - `next_cursor`
+- Практический эффект:
+  - service-backed registry search теперь умеет не только request-side paging и response metadata, но и cursor-aware navigation contract
+  - это готовит следующий шаг к page navigation loop без немедленного открытия full paginator framework
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован fuzzy plugin search checkpoint:
+  - `18823ebd0` — `feat(gena): add fuzzy plugin search`
+- В `gena-runtime` добавлен lightweight fuzzy fallback:
+  - subsequence match for `package_id`
+  - subsequence match for `display_name`
+- Практический эффект:
+  - ranked search теперь покрывает не только exact/prefix/substring cases
+  - remote plugin discovery стала полезнее без новой fuzzy dependency и без richer service layer
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован ranked plugin search checkpoint:
+  - `a36ee1d93` — `feat(gena): rank plugin index search results`
+- В `gena-runtime` добавлены:
+  - `RuntimePluginSearchResult`
+  - ranking/scoring поверх registry search
+- Current ranking order:
+  - exact `package_id`
+  - exact `display_name`
+  - prefix match
+  - substring match
+- В `codex-cli` `debug search-plugin-index` теперь печатает:
+  - `score`
+  - package metadata
+- Практический эффект:
+  - search UX теперь не просто filter, а ordered result set
+  - это более полезный operator flow без открытия full fuzzy/service complexity
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован plugin index search UX checkpoint:
+  - `7fd710139` — `feat(gena): add plugin index search ux`
+- В `gena-runtime` добавлен:
+  - `search_runtime_plugin_registry_index(...)`
+- Current search scope:
+  - substring match по:
+    - `package_id`
+    - `display_name`
+- В `codex-cli` добавлен discovery path:
+  - `debug search-plugin-index <INDEX_URL> <QUERY>`
+- Практический эффект:
+  - registry story теперь включает не только inspect/install/manage, но и первый search/discovery UX
+  - это уже полноценный minimal operator flow поверх remote plugin index
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован registry-backed plugin management checkpoint:
+  - `56d8fa220` — `feat(gena): add registry-backed plugin management`
+- В `gena-runtime` добавлены:
+  - `replace_runtime_plugin_from_registry_index(...)`
+  - `uninstall_runtime_plugin_from_registry_index(...)`
+- В `codex-cli` добавлены registry-backed management path:
+  - `debug replace-plugin-from-index <INDEX_URL> <PACKAGE_ID>`
+  - `debug uninstall-plugin-from-index <INDEX_URL> <PACKAGE_ID>`
+- Практический эффект:
+  - registry/index story теперь уже не только inspect/install
+  - появился полный registry-backed management loop:
+    - install
+    - replace/update
+    - uninstall
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован registry-backed plugin install checkpoint:
+  - `5ded103dc` — `feat(gena): add registry-backed plugin install`
+- В `gena-runtime` добавлен:
+  - `install_runtime_plugin_from_registry_index(...)`
+- Runtime теперь умеет:
+  - загрузить remote index
+  - найти package по `package_id`
+  - взять его `distribution_url`
+  - переиспользовать existing remote install flow
+- В `codex-cli` добавлен first registry-backed install path:
+  - `debug install-plugin-from-index <INDEX_URL> <PACKAGE_ID>`
+- Практический эффект:
+  - registry/index story теперь уже не только inspect/discoverability
+  - появился first registry-backed install UX
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован remote plugin index inspection checkpoint:
+  - `ae7d6f7ef` — `feat(gena): add remote plugin index inspection`
+- В `gena-runtime` добавлены:
+  - `RuntimePluginRegistryEntry`
+  - `inspect_runtime_plugin_registry_index_url(...)`
+- Current read-only remote index contract:
+  - TOML
+  - `[[packages]]`
+  - fields:
+    - `package_id`
+    - `display_name`
+    - `package_version`
+    - `distribution_url`
+- В `codex-cli` добавлен discoverability path:
+  - `debug inspect-plugin-index <INDEX_URL>`
+- Практический эффект:
+  - remote story теперь включает не только package transport/install, но и first discoverability layer
+  - это уже registry/index story без search service и без installer manager
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован remote plugin archive management checkpoint:
+  - `149d4093b` — `feat(gena): add remote plugin archive management`
+- В `gena-runtime` добавлены:
+  - `replace_runtime_plugin_bundle_archive_url(...)`
+  - `uninstall_runtime_plugin_bundle_archive_url(...)`
+- В `codex-cli` добавлены remote archive management path:
+  - `debug replace-plugin-url <ARCHIVE_URL>`
+  - `debug uninstall-plugin-url <ARCHIVE_URL>`
+- Практический эффект:
+  - remote story теперь уже не single install path
+  - local и remote archive management loop теперь симметричны:
+    - install
+    - replace/update
+    - uninstall
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован remote plugin archive install checkpoint:
+  - `0cc563f32` — `feat(gena): add remote plugin archive install`
+- В `gena-runtime` добавлены:
+  - `install_runtime_plugin_bundle_archive_url(...)`
+  - `inspect_runtime_plugin_bundle_archive_url(...)`
+- Runtime теперь:
+  - скачивает remote ZIP archive по `http://` / `https://`
+  - сохраняет его во временный файл
+  - затем переиспользует existing archive inspect/install flow
+- В `codex-cli` добавлен первый remote installer path:
+  - `debug install-plugin-url <ARCHIVE_URL>`
+- Практический эффект:
+  - remote distribution story больше не ограничена metadata contract
+  - появился первый реальный networked install flow поверх уже собранного archive/package installer layer
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован package distribution metadata checkpoint:
+  - `88dde7711` — `feat(gena): add package distribution metadata`
+- `gena-package.toml` расширен первым remote-facing package field:
+  - `distribution_url`
+- `gena-runtime` теперь:
+  - читает `distribution_url` из archive package manifest
+  - валидирует supported remote schemes:
+    - `http://`
+    - `https://`
+  - возвращает `distribution_url` через `inspect_runtime_plugin_bundle_archive(...)`
+- `codex-cli` archive inspection output теперь печатает:
+  - `distribution_url`
+- Практический эффект:
+  - external plugin packaging теперь имеет не только local install/archive contract, но и первый remote distribution contract
+  - remote story открыта без downloader/network scope
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован package-aware archive installer output checkpoint:
+  - `fe82e6a97` — `feat(gena): enrich archive installer output`
+- `codex-cli` archive action paths теперь сначала inspect-ят archive contract и печатают package-aware output для:
+  - `debug install-plugin-archive <ARCHIVE_PATH>`
+  - `debug replace-plugin-archive <ARCHIVE_PATH>`
+  - `debug uninstall-plugin-archive <ARCHIVE_PATH>`
+- Все три archive action path теперь возвращают:
+  - `package_id`
+  - `package_version`
+  - `bundle_dir`
+  - resulting filesystem path
+- Практический эффект:
+  - local archive installer workflow теперь не только mutates filesystem, но и возвращает package-aware operator-visible result
+  - richer installer workflow добран без открытия remote distribution scope
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован plugin archive inspection checkpoint:
+  - `f9693fcac` — `feat(gena): add plugin archive inspection`
+- В `gena-runtime` добавлен installer-facing preview helper:
+  - `inspect_runtime_plugin_bundle_archive(...)`
+- `inspect` path возвращает:
+  - archive package metadata:
+    - `package_id`
+    - `display_name`
+    - `package_version`
+    - `bundle_dir`
+  - resolved bundle metadata:
+    - `bundle_plugin_id`
+    - `bundle_display_name`
+    - `bundle_version`
+- В `codex-cli` добавлен preview path:
+  - `debug inspect-plugin-archive <ARCHIVE_PATH>`
+- Практический эффект:
+  - installer UX теперь умеет не только менять filesystem state, но и делать preview package/bundle contract до install
+  - это первый явный inspection step поверх local archive management loop
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован richer archive metadata checkpoint:
+  - `84b100596` — `feat(gena): add richer archive metadata`
+- `gena-package.toml` расширен от routing-only contract до archive identity/version metadata:
+  - `package_id`
+  - `display_name`
+  - `package_version`
+  - `bundle_dir`
+- Archive install/update/uninstall теперь валидируют package manifest against bundle metadata:
+  - `package_id -> plugin_id`
+  - `display_name -> bundle display_name`
+  - `package_version -> bundle plugin_version`
+- Практический эффект:
+  - archive layer теперь имеет не только package routing, но и identity/version consistency contract
+  - это уже ближе к real packaging model, при сохранении backward-compatible fallback
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован archive package manifest checkpoint:
+  - `a5877a023` — `feat(gena): add archive package manifest`
+- `gena-runtime` archive extraction теперь поддерживает package-level manifest:
+  - `gena-package.toml`
+  - field:
+    - `bundle_dir = "..."`
+- Archive install/update/uninstall теперь:
+  - сначала пытаются разрешить bundle root через archive package manifest
+  - и только затем используют old fallback:
+    - exactly one valid bundle root in extracted archive
+- Практический эффект:
+  - archive layer получил первый package contract, а не только implicit one-bundle convention
+  - backward compatibility с прежним archive layout сохранена
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` отдельно досинканут lockfile изменения после archive uninstall checkpoint:
+  - `fdbac73d5` — `build(gena): sync lockfile for archive uninstall`
+- `Cargo.lock` теперь отражает уже используемую в `gena-runtime` зависимость:
+  - `zip`
+
+- На `codex-rs/chore/update-arch` зафиксирован plugin archive uninstall checkpoint:
+  - `92400f4ec` — `feat(gena): add plugin archive uninstall flow`
+- В `gena-runtime` добавлен runtime-owned archive uninstall helper:
+  - `uninstall_runtime_plugin_bundle_archive(...)`
+- Archive uninstall:
+  - принимает ZIP archive path
+  - распаковывает archive во временную директорию
+  - требует ровно один valid bundle root с `gena-plugin.toml`
+  - затем использует existing bundle uninstall path по extracted bundle name в canonical `<product_home>/plugins`
+- В `codex-cli` добавлен symmetric archive removal path:
+  - `debug uninstall-plugin-archive <ARCHIVE_PATH>`
+- Практический эффект:
+  - archive UX теперь локально замкнут:
+    - install
+    - replace/update
+    - uninstall
+  - следующий шаг уже не про local file/archive helpers, а про richer installer/package conventions
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован plugin archive replace checkpoint:
+  - `31ada4214` — `feat(gena): add plugin archive replace flow`
+- В `gena-runtime` добавлены runtime-owned update helpers:
+  - `replace_runtime_plugin_bundle(...)`
+  - `replace_runtime_plugin_bundle_archive(...)`
+- Archive replace:
+  - принимает ZIP archive path
+  - распаковывает archive во временную директорию
+  - требует ровно один valid bundle root с `gena-plugin.toml`
+  - затем использует runtime-owned bundle replace path в canonical `<product_home>/plugins`
+- В `codex-cli` добавлен first archive update path:
+  - `debug replace-plugin-archive <ARCHIVE_PATH>`
+- Практический эффект:
+  - archive installer story теперь уже не one-shot install, а local install/update surface
+  - это лучший мост к symmetric archive management или richer installer UX, чем немедленный переход к full installer manager
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован plugin bundle archive install checkpoint:
+  - `17349f350` — `feat(gena): add plugin bundle archive install`
+- В `gena-runtime` добавлен runtime-owned archive install helper:
+  - `install_runtime_plugin_bundle_archive(...)`
+- Archive install:
+  - принимает ZIP archive path
+  - распаковывает archive во временную директорию
+  - требует ровно один valid bundle root с `gena-plugin.toml`
+  - затем использует existing bundle install path в canonical `<product_home>/plugins`
+- В `codex-cli` добавлен first archive install path:
+  - `debug install-plugin-archive <ARCHIVE_PATH>`
+- Практический эффект:
+  - ecosystem story теперь имеет не только local bundle directories, но и первый archive-based installer UX
+  - это первый шаг от local bundle layout к richer package/distribution conventions
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован bundle metadata validation checkpoint:
+  - `b38c73607` — `feat(gena): add bundle metadata validation`
+- `gena-runtime` bundle manifest contract расширен от одного `library = "..."` до identity/version metadata:
+  - `plugin_id`
+  - `display_name`
+  - `plugin_version`
+  - `library`
+- Dynamic loader теперь:
+  - читает bundle metadata при directory discovery
+  - валидирует bundle metadata против exported dynamic plugin manifest:
+    - `plugin_id`
+    - `plugin_display_name`
+    - `plugin_version`
+- `RuntimeDynamicPlugin` теперь хранит bundle-aware runtime report:
+  - `bundle_root`
+  - `bundle_manifest`
+- `codex debug plugins` теперь печатает bundle-aware dynamic plugin report:
+  - `bundle_root`
+  - `bundle_plugin_id`
+  - `bundle_display_name`
+  - `bundle_version`
+- Практический эффект:
+  - bundle UX теперь имеет не только local install/uninstall surface, но и identity/version consistency contract
+  - это лучший мост к archive/install UX, чем immediate jump from local bundle file ops
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован bundle uninstall UX checkpoint:
+  - `1c13e067b` — `feat(gena): add plugin bundle uninstall flow`
+- В `gena-runtime` добавлен runtime-owned bundle uninstall helper:
+  - `uninstall_runtime_plugin_bundle(...)`
+- В `codex-cli` добавлен symmetric bundle management path:
+  - `debug uninstall-plugin-bundle <BUNDLE_DIR_OR_NAME>`
+- Bundle uninstall поддерживает:
+  - absolute bundle path
+  - relative bundle dir name inside `<product_home>/plugins`
+  - validation of `gena-plugin.toml` before remove
+- Практический эффект:
+  - bundle UX теперь замкнут на локальном уровне:
+    - install bundle
+    - uninstall bundle
+  - следующий шаг уже реально лежит в archive/installer layer, а не в ещё одном local bundle helper
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован bundle install UX checkpoint:
+  - `50f75e0f2` — `feat(gena): add plugin bundle install flow`
+- В `gena-runtime` добавлен runtime-owned bundle install helper:
+  - `install_runtime_plugin_bundle(...)`
+- В `codex-cli` добавлен first bundle install path:
+  - `debug install-plugin-bundle <BUNDLE_DIR>`
+- Bundle install:
+  - валидирует bundle через `gena-plugin.toml`
+  - требует valid `library = "..."`
+  - копирует bundle directory в canonical `<product_home>/plugins`
+- Практический эффект:
+  - external plugin story теперь имеет не только bundle discovery, но и first bundle install UX
+  - это уже ближе к real packaging/install experience без archive manager
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован plugin bundle directory checkpoint:
+  - `40bd71a84` — `feat(gena): add plugin bundle directory convention`
+- `gena-runtime` dynamic loader теперь поддерживает bundle directory layout:
+  - directory under plugin roots
+  - `gena-plugin.toml`
+  - manifest field `library = "..."`
+- Практический эффект:
+  - external plugin story теперь имеет первый package layout convention, а не только raw shared library discovery
+  - это подготавливает richer packaging/install UX без archive manager прямо сейчас
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован minimal replace flow checkpoint для external plugins:
+  - `baf13201a` — `feat(gena): add minimal plugin replace flow`
+- В `gena-runtime` добавлен runtime-owned replace helper:
+  - `replace_runtime_plugin_library(...)`
+- В `codex-cli` добавлен local management path:
+  - `debug replace-plugin <LIBRARY_PATH>`
+- Replace flow требует существующий installed target и обновляет library по имени файла в canonical plugin dir.
+- Практический эффект:
+  - external plugin story теперь имеет complete local file-management loop:
+    - install
+    - replace
+    - uninstall
+  - следующий шаг уже действительно уходит в package/archive или richer installer UX, а не в базовые file ops
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован minimal uninstall flow checkpoint для external plugins:
+  - `1e7d7ae44` — `feat(gena): add minimal plugin uninstall flow`
+- В `gena-runtime` добавлен runtime-owned uninstall helper:
+  - `uninstall_runtime_plugin_library(...)`
+- В `codex-cli` добавлен симметричный local management path:
+  - `debug uninstall-plugin <LIBRARY_PATH_OR_NAME>`
+- Uninstall flow поддерживает:
+  - absolute installed path
+  - relative file name inside `<product_home>/plugins`
+- Практический эффект:
+  - external plugin story теперь имеет локальный install/uninstall management loop
+  - это уже больше похоже на реальный plugin management surface, даже без updater/package manager
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован minimal install flow checkpoint для external plugins:
+  - `084412c94` — `feat(gena): add minimal plugin install flow`
+- В `gena-runtime` добавлен runtime-owned install helper:
+  - `install_runtime_plugin_library(...)`
+- В `codex-cli` добавлен первый install command path:
+  - `debug install-plugin <LIBRARY_PATH>`
+- Install flow копирует shared library в canonical plugin dir:
+  - `<product_home>/plugins`
+- Практический эффект:
+  - external plugin story получила первый реальный install flow без package manager/download pipeline
+  - canonical install location и dynamic loader теперь связаны не только discovery, но и install path
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован canonical install location checkpoint для external plugins:
+  - `c515ff206` — `feat(gena): add default plugin install directory`
+- `gena-runtime` dynamic loader теперь использует default brand-aware plugin directory:
+  - `<product_home>/plugins`
+- `GENA_PLUGIN_DIRS` остаётся как extension/override layer поверх canonical install location.
+- Практический эффект:
+  - external plugin story получила не только directory discovery, но и стандартное место установки
+  - install/distribution model стал более конкретным и меньше зависит от env-only configuration
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован directory-based discovery checkpoint для external plugins:
+  - `90d256e14` — `feat(gena): discover dynamic plugins from directories`
+- `gena-runtime` dynamic loader теперь поддерживает:
+  - `GENA_PLUGIN_DIRS`
+  - non-recursive discovery plugin libraries inside configured directories
+  - platform-aware extension filtering:
+    - `.so`
+    - `.dylib`
+    - `.dll`
+- Практический эффект:
+  - external plugin story перестала зависеть только от явного списка library paths
+  - появился первый install/distribution convention для plugin directories
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован publishing metadata checkpoint для dynamic plugins:
+  - `68d07491c` — `feat(gena): add dynamic plugin publishing metadata`
+- `DynamicPluginManifest` расширен publishing-facing metadata:
+  - `plugin_version`
+  - `repository_url`
+  - `license`
+- `gena-runtime` теперь валидирует эти поля как часть dynamic plugin compatibility boundary.
+- `codex debug plugins` теперь печатает richer dynamic plugin report:
+  - `plugin_version`
+  - `license`
+  - `repository_url`
+- Практический эффект:
+  - external plugin story поднята от ABI-only manifest к первому publishing-facing metadata contract
+  - появился более реалистичный фундамент для future packaging/publishing conventions
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован runtime reporting checkpoint для dynamic plugins:
+  - `83d98350f` — `feat(gena): report discovered dynamic plugins`
+- `RuntimePluginSnapshot` теперь хранит discovered dynamic plugin manifests как:
+  - `RuntimeDynamicPlugin`
+  - `dynamic_plugins()`
+- `codex debug plugins` теперь печатает external/dynamic plugin report:
+  - `plugin_id`
+  - `plugin_display_name`
+  - `abi_version`
+  - `plugin_api_version`
+  - `library_path`
+- Практический эффект:
+  - dynamic loader теперь не только валидирует manifest, но и делает external plugin state наблюдаемым
+  - появился первый CLI-facing reporting path для будущей publishing/compatibility story
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован compatibility checkpoint для dynamic plugins:
+  - `366dc55f2` — `feat(gena): add dynamic plugin compatibility manifest`
+- В `gena-plugin-api` добавлен versioned manifest contract:
+  - `DynamicPluginManifest`
+  - `DynamicPluginManifestFn`
+  - `DYNAMIC_PLUGIN_MANIFEST_SYMBOL`
+  - `CURRENT_DYNAMIC_PLUGIN_ABI_VERSION`
+- `gena-plugins-core` теперь экспортирует canonical dynamic manifest через:
+  - `gena_plugin_manifest`
+- `gena-runtime` dynamic loader теперь:
+  - читает manifest до registration
+  - валидирует ABI version
+  - отклоняет plugin с пустым `plugin_id`
+- Практический эффект:
+  - dynamic loading перестал быть "слепым dlopen + register"
+  - plugin platform получила первый compatibility boundary для external plugins
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-03-12
+- На `codex-rs/chore/update-arch` зафиксирован первый реальный tool execution checkpoint:
+  - `63897b3e0` — `feat(gena): add apply patch tool execution`
+- В `gena-plugin-api` tool contract расширен:
+  - добавлен `ToolExecutionKind`
+  - `ToolDescriptor` и `RegisteredTool` теперь хранят `execution_kind`
+- В `gena-runtime` добавлены:
+  - `RuntimeToolExecutionPlan`
+  - `Tool` variant для `RuntimeExecutionTarget`
+  - `Tool` variant для `RuntimeExecutionPlan`
+- `RuntimePluginLifecycle` и lifecycle trace теперь умеют готовить `apply_patch` tool execution
+- Первый реальный tool execution path переведён на этот слой:
+  - `ApplyPatchApprovalRequest` в `tui/chatwidget`
+- Практический эффект:
+  - `tool` axis впервые получил production execution path, а не только registry/introspection
+  - execution stack теперь реально покрывает `command`, `workflow` и `tool`
+  - provider execution, callbacks и dynamic loader сознательно ещё не открывались
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-tui -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован первый lifecycle trace checkpoint:
+  - `12fda2981` — `feat(gena): add plugin lifecycle trace`
+- В `gena-runtime` добавлены:
+  - `RuntimeLifecycleStage`
+  - `RuntimePreparedExecutionTrace`
+  - `prepare_execution_with_lifecycle(...)`
+- Минимальный lifecycle trace пока фиксирует только:
+  - `BeforePrepare`
+  - `AfterPrepare`
+- На lifecycle-aware path переведены:
+  - `codex mcp`
+  - `codex review`
+- Практический эффект:
+  - execution stack теперь имеет первый реальный lifecycle trace поверх prepared execution
+  - lifecycle layer стал не только façade/manager, но и trace-bearing pipeline
+  - callbacks, tool/provider execution и dynamic loader сознательно не открывались
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован следующий deeper execution checkpoint:
+  - `bde3fa2e7` — `feat(gena): add prepared plugin execution`
+- В `gena-runtime` добавлена runtime-owned execution unit abstraction:
+  - `RuntimePreparedExecution`
+  - `prepare_execution_unit(...)`
+- Prepared execution unit теперь связывает:
+  - execution plan
+  - owning plugin id
+  - owning plugin display name
+- На этот слой переведены:
+  - `codex mcp`
+  - `codex review`
+- Практический эффект:
+  - execution stack теперь возвращает не только capability plan, но и ownership-aware execution unit
+  - runtime execution framework стал глубже без dynamic loader, lifecycle hooks и tool/provider execution
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован первый lifecycle manager checkpoint:
+  - `463b2bf1a` — `feat(gena): add plugin lifecycle manager`
+- В `gena-runtime` добавлен runtime-owned lifecycle слой:
+  - `RuntimePluginLifecycle`
+  - `discover(...)`
+  - `snapshot()`
+  - `registry()`
+  - `prepare_execution(...)`
+- На lifecycle manager переведены:
+  - `codex mcp`
+  - `codex review`
+  - `codex debug plugins`
+- Практический эффект:
+  - execution stack оформлен как единый pipeline: discovery -> snapshot -> lifecycle -> plan
+  - runtime plugin execution layer перестал быть только snapshot + helper API
+  - dynamic loader, lifecycle hooks и tool/provider execution сознательно ещё не открывались
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован первый unified execution planning checkpoint:
+  - `b7871bd33` — `feat(gena): unify plugin execution planning`
+- Поверх `RuntimePluginSnapshot` добавлены:
+  - `RuntimeExecutionTarget`
+  - `RuntimeExecutionPlan`
+  - общий `resolve/require_execution(...)`
+- На этот unified execution API переведены:
+  - `codex mcp`
+  - `codex review`
+- Практический эффект:
+  - execution planning больше не разнесён только по отдельным command/workflow методам
+  - lifecycle/dispatch frontier начал оформляться как общий runtime-owned слой
+  - tool/provider execution и общий lifecycle manager сознательно не открывались
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован первый общий execution façade поверх discovered registry:
+  - `58a9a9597` — `feat(gena): add runtime plugin snapshot`
+- В `gena-runtime` добавлен `RuntimePluginSnapshot`:
+  - `discover(...)`
+  - `registry()`
+  - `resolve/require_command_dispatch(...)`
+  - `resolve/require_workflow_execution(...)`
+- На snapshot переведены production/debug paths:
+  - `codex mcp`
+  - `codex review`
+  - `codex debug plugins`
+- Практический эффект:
+  - discovered registry больше не инициализируется вручную в CLI callsite'ах
+  - execution layer впервые получил общий runtime façade, а не только разрозненные helper'ы
+  - lifecycle manager и dynamic execution framework сознательно не открывались
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован первый plugin execution checkpoint поверх static discovery:
+  - `c30911689` — `feat(gena): add workflow execution plan`
+- В `gena-plugin-api` workflow contract расширен:
+  - добавлен `WorkflowExecutionKind`
+  - `WorkflowDescriptor` и `RegisteredWorkflow` теперь хранят `execution_kind`
+- В `gena-runtime` добавлены:
+  - `RuntimeWorkflowExecutionPlan`
+  - `resolve_runtime_workflow_execution(...)`
+  - `require_runtime_workflow_execution(...)`
+  - discovered variants для workflow execution
+- Built-in workflow consumer переведён на execution-aware descriptor:
+  - `ReviewWorkflowPlugin` теперь регистрирует `BuiltinReview`
+- На execution plan переведён production path:
+  - `codex review`
+- Практический эффект:
+  - plugin layer получил вторую execution axis поверх discovered registry
+  - execution больше не ограничивается только command path `mcp`
+  - общий dynamic execution framework и lifecycle manager сознательно не открывались
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован первый loader-discovery checkpoint:
+  - `fb42632d6` — `feat(gena): add static plugin discovery`
+  - `5c0605928` — `build(gena): sync lockfile for static discovery`
+- В `gena-plugin-api` добавлен минимальный static discovery layer:
+  - `PluginRegistrar`
+  - `register_discovered_plugins(...)`
+  - `inventory`-based registrar collection
+- В `gena-plugins-core` built-in plugins теперь публикуют static registrars:
+  - `inventory::submit!` для `register_core_plugins`
+  - `ensure_core_plugins_linked()` как link hook для production path
+- В `gena-runtime` добавлены:
+  - `initialize_discovered_runtime_plugin_registry(...)`
+  - `resolve_discovered_runtime_command_dispatch(...)`
+  - `require_discovered_runtime_command_dispatch(...)`
+- На discovered registry переведены production/debug paths:
+  - `codex mcp`
+  - `codex debug plugins`
+- Практический эффект:
+  - plugin layer получил первый честный loader-discovery bridge без перехода к dynamic loader/lifecycle manager
+  - registry/use path теперь больше не завязан только на manual callback wiring
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован следующий plugin capability step:
+  - `9888f2c7c` — `feat(gena): add workflow plugin category`
+- В `gena-plugin-api` workflow contract переведён на descriptor-based модель:
+  - добавлены `WorkflowDescriptor` и `RegisteredWorkflow`
+  - `WorkflowPlugin` теперь регистрирует workflow descriptor, а не голое имя
+- В `gena-runtime` добавлены:
+  - `resolve_runtime_workflow_plugin(...)`
+  - `require_runtime_workflow_plugin(...)`
+- В `gena-plugins-core` добавлен built-in workflow consumer:
+  - `ReviewWorkflowPlugin`
+- В `codex-cli` debug path расширен:
+  - `codex debug plugins` теперь печатает workflow registry наряду с plugins, tools, providers и commands
+- Практический эффект:
+  - plugin layer теперь имеет четыре capability axis: `command`, `provider`, `tool`, `workflow`
+  - workflow execution semantics, loader/discovery и runtime workflow dispatch сознательно не открывались на этом шаге
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован следующий plugin capability step:
+  - `c1c260598` — `feat(gena): add tool plugin category`
+- В `gena-plugin-api` tool contract переведён на descriptor-based модель:
+  - добавлены `ToolDescriptor` и `RegisteredTool`
+  - `ToolPlugin` теперь регистрирует tool descriptor, а не голое имя
+- В `gena-runtime` добавлены:
+  - `resolve_runtime_tool_plugin(...)`
+  - `require_runtime_tool_plugin(...)`
+- В `gena-plugins-core` добавлен built-in tool consumer:
+  - `ApplyPatchToolPlugin`
+- В `codex-cli` debug path расширен:
+  - `codex debug plugins` теперь печатает tool registry наряду с plugins, providers и commands
+- Практический эффект:
+  - plugin layer теперь имеет уже три capability axis: `command`, `provider`, `tool`
+  - tool execution semantics, loader/discovery и runtime tool dispatch сознательно не открывались на этом шаге
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- Зафиксирован formal plugin checkpoint после шага `de7e8ac69`.
+- Итоговый plugin verdict на этом checkpoint:
+  - `command` axis доведён до runtime-owned dispatch plan;
+  - `provider` axis добавлен как второй thin capability category;
+  - `gena-plugin-api` и `gena-plugins-core` уже не являются только prework-заготовкой;
+  - runtime registry/introspection seams уже реально используются в production/debug paths.
+- Практическое решение:
+  - не форсировать следующий plugin шаг ради симметрии;
+  - не открывать сразу deeper provider integration;
+  - следующий шаг выбирать уже как новый отдельный capability/frontier.
+
+- После закрытия предыдущей migration-phase открыт новый отдельный plugin-этап по `provider` category.
+- На `codex-rs/chore/update-arch` зафиксирован:
+  - `de7e8ac69` — `feat(gena): add provider plugin category`
+- В `gena-plugin-api` provider contract переведён на descriptor-based модель:
+  - добавлены `ProviderDescriptor` и `RegisteredProvider`
+  - `ProviderPlugin` теперь регистрирует provider descriptor, а не голое имя
+- В `gena-runtime` добавлены:
+  - `resolve_runtime_provider_plugin(...)`
+  - `require_runtime_provider_plugin(...)`
+- В `gena-plugins-core` добавлен первый built-in provider consumer:
+  - `LlmOpsProviderPlugin`
+- В `codex-cli` debug path расширен:
+  - `codex debug plugins` теперь печатает provider registry наряду с plugins и commands
+- Практический эффект:
+  - plugin layer перестал быть только command-axis
+  - появился второй capability axis без dynamic execution, loader/discovery и без перевода provider bootstrap logic на plugins
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+- Formalization phase завершена как финальный checkpoint текущей архитектурной migration-phase.
+- Итоговый verdict:
+  - базовые Gena-owned слои собраны и реально используются;
+  - plugin phase достигла достаточного рабочего состояния для текущего DoD;
+  - дешёвые и средние production seams в основном закрыты;
+  - текущую migration-phase можно считать завершённой.
+- За рамками текущего DoD сознательно оставлены:
+  - plugin loader/discovery
+  - dynamic plugin execution
+  - второй built-in consumer как обязательный пункт
+  - новый runtime orchestration frontier
+- Практический вывод:
+  - дальнейшие шаги нужно открывать уже как новую отдельную фазу, а не как хвост текущей задачи.
+
+- На `codex-rs/chore/update-arch` зафиксирован первый deeper plugin integration step:
+  - `441b095ef` — `feat(gena): add plugin command dispatch plan`
+- В `gena-plugin-api` command contract расширен:
+  - добавлены `CommandDispatchKind` и `CommandDescriptor`
+  - `RegisteredCommand` теперь хранит не только owner binding, но и dispatch kind
+- В `gena-runtime` добавлены:
+  - `RuntimeCommandDispatchPlan`
+  - `resolve_runtime_command_dispatch(...)`
+  - `require_runtime_command_dispatch(...)`
+- На этот слой переведён production path:
+  - `codex mcp` теперь использует runtime-owned dispatch plan, а не только existence gate
+- Практический эффект:
+  - plugin phase ушла дальше простого registry/introspection/gating
+  - появился первый command-dispatch contract без loader/discovery и без dynamic execution
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -j1` PASS
+
+- Зафиксирован phase checkpoint по `codex-rs/chore/update-arch` после шага `ec6fac82c`.
+- Практический вывод checkpoint:
+  - дешёвые и средние по цене production seams в `cli` / `tui` / `exec` в основном закрыты;
+  - большая часть оставшихся `ConfigBuilder` / `AuthManager` / config-edit хвостов уже сидит в тестах или в low-ROI residual callsite'ах;
+  - дальнейшие маленькие helper-step'ы перестают давать прежний выигрыш для upstream sync.
+- Архитектурная интерпретация:
+  - fork уже далеко ушёл от режима dirty fork;
+  - базовые Gena-owned слои собраны и реально используются;
+  - следующие шаги нужно выбирать уже как новые крупные этапы, а не как механическое продолжение thinning.
+- На этом checkpoint plugin phase тоже считается в хорошем промежуточном состоянии:
+  - есть crate `gena-plugin-api`
+  - есть `PluginRegistry`
+  - есть built-in consumer в `gena-plugins-core`
+  - есть thin runtime integration seam
+  - есть debug usage path
+  - есть первый runtime-owned execution gate для `mcp`
+
+- На `codex-rs/chore/update-arch` закрыт residual `voice` auth/bootstrap seam:
+  - `ec6fac82c` — `refactor(gena): centralize voice auth context`
+- В `gena-runtime` добавлены:
+  - `RuntimeChatgptAuthContext`
+  - `resolve_runtime_chatgpt_auth_context(...)`
+- Внутри runtime helper централизованы:
+  - product home resolution
+  - persisted auth context read
+  - config loading
+  - ChatGPT base URL normalization для transcription path
+- На этот helper переведён:
+  - `tui/src/voice.rs`
+- Практический эффект:
+  - `voice` больше не держит локальный auth/bootstrap glue
+  - ещё один production-facing ChatGPT auth path теперь сидит в Gena-owned runtime layer
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+
+- На `codex-rs/chore/update-arch` зафиксирован первый runtime-owned plugin command path:
+  - `9871dff50` — `feat(gena): add runtime-owned plugin command path`
+- В `gena-plugin-api` command registry расширен до ownership-aware контракта:
+  - добавлен `RegisteredCommand { plugin_id, command_name }`
+  - `PluginRegistry` теперь хранит команды как plugin-owned bindings, а не как голые строки
+  - добавлены helper'ы `commands()`, `has_command_name(...)`, `find_command(...)`
+- В `gena-runtime` добавлены:
+  - `resolve_runtime_command_plugin(...)`
+  - `require_runtime_command_plugin(...)`
+- На это переведены реальные callsite'ы:
+  - `codex mcp` теперь проверяет регистрацию command plugin через runtime seam перед исполнением
+  - `codex debug plugins` теперь печатает `command -> plugin_id`, а не только имя команды
+- Практический эффект:
+  - plugin registry перестал быть только registry/introspection prework
+  - появился первый production execution gate поверх registry
+  - command ownership contract стал ближе к реальной plugin architecture
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -j1` PASS
+
+- На `codex-rs/chore/update-arch` закрыт residual cleanup для нового plugin seam:
+  - `49a237dc8` — `refactor(gena): tighten plugin registry boundaries`
+- В `gena-plugin-api` исправлен registration contract:
+  - `PluginRegistry` больше не дублирует один и тот же `PluginMetadata`, если plugin регистрируется в нескольких capability category
+- В `gena-plugins-core` убрана лишняя зависимость на `gena-runtime`:
+  - crate теперь зависит только от `gena-plugin-api`
+  - local tests больше не используют runtime helper для пустой registry initialization
+- В `codex-cli` первый usage path `debug plugins` переведён на runtime seam:
+  - CLI больше не использует обходной `build_core_plugin_registry()`
+  - registry теперь строится через `gena_runtime::initialize_runtime_plugin_registry(register_core_plugins)`
+- Практический эффект:
+  - plugin registry contract стал устойчивее для multi-capability plugins
+  - dependency direction стала ближе к целевой архитектуре
+  - первый CLI-facing usage path больше не обходит runtime-owned integration seam
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -j1` PASS
+
+## 2026-03-11
+- На `codex-rs/chore/update-arch` зафиксирован первый CLI-facing usage path для нового plugin registry:
+  - `491b491bd` — `feat(gena): expose plugin registry via debug command`
+- В `cli` добавлены:
+  - dependency на `gena-plugins-core`
+  - новый debug path: `codex debug plugins`
+- Практический эффект:
+  - registry перестал быть только внутренним API/prework слоем
+  - появился первый реальный usage path, который печатает built-in plugins и command names из core registry
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован первый thin integration seam для нового plugin слоя:
+  - `95a341185` — `feat(gena): add thin plugin runtime integration`
+- В `gena-runtime` добавлены:
+  - `plugins.rs`
+  - `initialize_runtime_plugin_registry(...)`
+- В `gena-plugins-core` добавлены:
+  - зависимость на `gena-runtime`
+  - `build_core_plugin_registry()`, который использует runtime-level registry initialization
+- Практический эффект:
+  - появился первый очень тонкий integration seam между `gena-runtime` и `gena-plugins-core`
+  - при этом всё ещё нет runtime loader, discovery или plugin execution path
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован первый реальный consumer для `gena-plugin-api`:
+  - `43e301d50` — `feat(gena): add core command plugin consumer`
+- В workspace добавлен новый crate:
+  - `gena-plugins-core`
+- Внутри него добавлены:
+  - `McpCommandPlugin`
+  - `register_core_plugins(...)`
+- Практический эффект:
+  - `plugin-api prework` перестал быть только про API/registry surface
+  - появился первый built-in consumer без runtime loader и без широкого plugin integration шага
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-plugin-api -p gena-plugins-core -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий checkpoint внутри `plugin-api prework`:
+  - `37fd7c481` — `feat(gena): add plugin registry seam`
+- В `gena-plugin-api` добавлены:
+  - `PluginRegistry`
+  - default `register(...)` / `register_tool(...)` / `register_workflow(...)` / `register_provider(...)` / `register_memory(...)` / `register_command(...)`
+- Практический эффект:
+  - `gena-plugin-api` перестал быть только набором именованных trait'ов
+  - появился минимальный registration contract без runtime loader и без реальной plugin integration
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-plugin-api -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован первый strategic step уже не только по sync-cost, но и по target architecture:
+  - `381275e4a` — `feat(gena): add minimal plugin api crate`
+- В workspace добавлен новый crate:
+  - `gena-plugin-api`
+- Внутри него пока зафиксированы только very-thin stable contracts:
+  - `PluginMetadata`
+  - `Plugin`
+  - `ToolPlugin`
+  - `WorkflowPlugin`
+  - `ProviderPlugin`
+  - `MemoryPlugin`
+  - `CommandPlugin`
+- Практический эффект:
+  - начат переход к `GENA_REPO_STRUCTURE` не через premature plugin system, а через минимальный API surface
+  - пока без runtime integration и без plugin loader, чтобы не открывать слишком широкий фронт изменений
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-plugin-api -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован cheap production seam вне auth-flow:
+  - `route debug sandbox config through runtime` step
+- В `gena-runtime` добавлен helper:
+  - `load_runtime_config_with_harness_overrides(...)`
+- На него переведён:
+  - `cli/src/debug_sandbox.rs`
+- Практический эффект:
+  - `debug_sandbox` больше не вызывает напрямую `Config::load_with_cli_overrides_and_harness_overrides(...)`
+  - sandbox-specific harness overrides остаются в `cli`, но config-loading boundary теперь Gena-owned
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -j1` PASS
+- Сделан residual audit по CLI `browser fallback transition` после шага `9e5adcadc`.
+- Вывод audit:
+  - в `cli/src/login.rs` остался только один локальный fallback branch вокруг `run_device_code_login(...).await` -> `ErrorKind::NotFound` -> `login_with_browser_server(...)`
+  - этот кусок уже не shared между CLI и TUI после выноса headless fallback decision в `gena-runtime`
+  - дальнейший вынос дал бы слабый helper ради одного callsite и начал бы размывать runtime boundary
+- Практическое решение:
+  - поставить `device-auth / browser-login orchestration` на паузу
+  - следующий шаг выбирать уже как новый high-ROI boundary вне этой auth-flow оси
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green step в `device-auth / browser-login`-оси:
+  - `9e5adcadc` — `refactor(gena): centralize headless device auth fallback`
+- В `gena-runtime` добавлены:
+  - `RuntimeHeadlessDeviceCodeStart`
+  - `request_runtime_device_code_or_browser(...)`
+- На этот helper переведён:
+  - `tui/src/onboarding/auth/headless_chatgpt_login.rs`
+- Практический эффект:
+  - `request_device_code(...)` и fallback decision `NotFound -> start browser login` больше не живут локально в TUI headless flow
+  - UI/state updates и `block_until_done` result handling остались в TUI, то есть state machine не вытаскивалась в runtime
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+
+## 2026-03-09
+- На `codex-rs/chore/update-arch` зафиксирован первый shared orchestration-step внутри `device-auth / browser-login`-оси:
+  - `c9f2c505d` — `refactor(gena): centralize browser login launch`
+- В `gena-runtime` добавлены:
+  - `RuntimeBrowserLoginServer`
+  - `start_runtime_browser_login(...)`
+  - `format_runtime_browser_login_start_message(...)`
+- На этот helper переведены:
+  - `cli/src/login.rs`
+  - `tui/src/onboarding/auth.rs`
+  - `tui/src/onboarding/auth/headless_chatgpt_login.rs`
+- Практический эффект:
+  - direct `run_login_server(...)` launch path больше не дублируется между CLI и TUI
+  - state machine/UI orchestration пока не выносились, шаг остался узким и compile-checkable
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован residual cleanup-step после закрытия основной `gena-runtime stabilization` фазы:
+  - `4d3c43a93` — `refactor(gena): split runtime turn context module`
+- Из `gena-runtime/src/lib.rs` в новый модуль вынесен:
+  - `build_runtime_turn_context_override(...)`
+- Совместимость сохранена через `pub use`, поэтому внешняя API-поверхность не изменилась.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- Практический вывод:
+  - теперь `gena-runtime/src/lib.rs` окончательно выполняет роль фасада
+  - следующий шаг уже лучше выбирать вне дальнейшего module-splitting `gena-runtime`
+- Сделан residual audit после серии split-шагов `auth -> config -> interaction -> bootstrap -> thread` внутри `gena-runtime`.
+- Итог audit:
+  - `gena-runtime/src/lib.rs` ужат до тонкого фасада
+  - в production surface там по сути остался только `build_runtime_turn_context_override(...)`
+  - дальнейший split дал бы уже низкий ROI и превратился бы в micro-split ради самого split
+- Практическое решение:
+  - считать текущую фазу `gena-runtime stabilization` практически закрытой
+  - следующий architectural step выбирать уже вне module-splitting `gena-runtime`
+- На `codex-rs/chore/update-arch` зафиксирован следующий structural stabilization-step для самого `gena-runtime`:
+  - `a447d0b12` — `refactor(gena): split runtime thread module`
+- Из монолитного `gena-runtime/src/lib.rs` в новый модуль вынесены:
+  - thread manager factory
+  - default model resolution
+  - start/resume thread helpers
+  - fork thread helpers
+- Совместимость сохранена через `pub use`, поэтому внешняя API-поверхность не изменилась.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий structural stabilization-step для самого `gena-runtime`:
+  - `1924b2a89` — `refactor(gena): split runtime bootstrap module`
+- Из монолитного `gena-runtime/src/lib.rs` в новый модуль вынесены:
+  - bootstrap context helpers
+  - OTEL/log-db bootstrap helpers
+  - OSS bootstrap/provider planning helpers
+  - trust/login/onboarding bootstrap policy
+  - provider token bootstrap helpers
+- Совместимость сохранена через `pub use`, поэтому внешняя API-поверхность не изменилась.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий structural stabilization-step для самого `gena-runtime`:
+  - `c58ad8934` — `refactor(gena): split runtime interaction module`
+- Из монолитного `gena-runtime/src/lib.rs` в новый модуль вынесены:
+  - exit formatting helpers
+  - interactive startup helpers
+  - clear-memory helpers
+  - feature listing/enable/formatting helpers
+  - interactive resume/fork shaping helpers
+- Совместимость сохранена через `pub use`, поэтому внешняя API-поверхность не изменилась.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий structural stabilization-step для самого `gena-runtime`:
+  - `4b6e7c1dd` — `refactor(gena): split runtime config module`
+- Из монолитного `gena-runtime/src/lib.rs` в новый модуль вынесены:
+  - runtime config loading helpers
+  - session lookup / session cwd helpers
+  - config rebuild and policy override helpers
+  - config persistence helpers для feature/app/skill/MCP/model/windows-sandbox flows
+  - runtime config bootstrap helpers (`build_runtime_config*`, execpolicy, residency/login restrictions, cloud requirements)
+- Совместимость сохранена через `pub use`, поэтому внешняя API-поверхность не изменилась.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован первый структурный stabilization-step для самого `gena-runtime`:
+  - `060c19131` — `refactor(gena): split runtime auth module`
+- Из монолитного `gena-runtime/src/lib.rs` в новый модуль вынесены:
+  - auth-related public types
+  - persisted auth helpers
+  - login/logout helpers
+  - ChatGPT server/device option builders
+  - `build_runtime_auth_manager(...)`
+- Совместимость сохранена через `pub use`, поэтому внешняя API-поверхность не изменилась.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован первый безопасный step внутри `device-auth`-оси:
+  - `1302a2825` — `refactor(gena): centralize device auth options`
+- В `gena-runtime` добавлен helper:
+  - `build_runtime_chatgpt_device_code_options(...)`
+- На него переведены:
+  - `cli/src/login.rs`
+  - `tui/src/onboarding/auth/headless_chatgpt_login.rs`
+- Практический эффект:
+  - shaping `issuer/open_browser` для device-auth options больше не размазан между CLI и TUI headless flow
+  - browser/device orchestration пока не выносилась, шаг остался узким и compile-checkable
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий production observability step:
+  - `2b6edc239` — `refactor(gena): centralize tui log db bootstrap`
+- В `gena-runtime` добавлен helper:
+  - `build_runtime_log_db_layer(...)`
+- На него переведён в `tui/lib` bootstrap path для:
+  - `state_db::get_state_db(...)`
+  - `log_db::start(...).with_filter(env_filter())`
+- Практический эффект:
+  - remaining TUI-only log DB bootstrap больше не живёт локально в `tui/lib`
+  - observability/bootstrap glue ещё плотнее собран в Gena-owned runtime layer
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован production-facing Windows sandbox step:
+  - `6dea17939` — `refactor(gena): centralize windows sandbox persistence`
+- В `gena-runtime` добавлен helper:
+  - `persist_runtime_windows_sandbox_mode(...)`
+- На него переведён в `tui/app` persistence path для:
+  - `set_windows_sandbox_mode(...)`
+  - `clear_legacy_windows_sandbox_keys()`
+- Практический эффект:
+  - config persistence для Windows sandbox mode больше не живёт локально в `tui/app`
+  - UI/state updates после успешного apply остались локально, где им и место
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один узкий step внутри `ChatGPT login bootstrap`-оси:
+  - `d4b4e0dad` — `refactor(gena): simplify cli browser login flow`
+- В `cli/src/login.rs`:
+  - browser-login launch path сведён к local helper
+  - helper используется и в `login_with_chatgpt(...)`, и в browser fallback path
+- Практический эффект:
+  - repeated `run_login_server(...) + print_login_server_start(...) + block_until_done().await` больше не дублируется внутри CLI
+  - шаг остался локальным и не потащил TUI onboarding state machine в runtime
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p codex-cli -j1` PASS
+- Для `ChatGPT login bootstrap`-шага отдельно досинхронизирован lockfile:
+  - `a3a18c785` — `build(gena): sync lockfile for chatgpt login runtime dep`
+- В `Cargo.lock` зафиксирована новая зависимость `codex-login` для `gena-runtime`.
+- На `codex-rs/chore/update-arch` зафиксирован первый step в `ChatGPT login bootstrap`-оси:
+  - `dd2f28aba` — `refactor(gena): centralize chatgpt login server options`
+- В `gena-runtime`:
+  - добавлена зависимость `codex-login`
+  - добавлен shared helper `build_runtime_chatgpt_server_options(...)`
+- На него переведены:
+  - `cli/src/login.rs`
+  - `tui/src/onboarding/auth.rs`
+- Практический эффект:
+  - repeated `ServerOptions::new(...)` bootstrap-конфигурация больше не размазана по CLI и TUI onboarding
+  - browser/device auth state machine пока не выносилась, шаг остался узким и compile-checkable
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован cheap residual config-persist step в `tui/app`:
+  - `303804554` — `refactor(gena): centralize residual tui model persistence`
+- В `gena-runtime` добавлены helper'ы:
+  - `persist_runtime_model_availability_nux_count(...)`
+  - `persist_runtime_current_model_selection(...)`
+- На них переведены в `tui/app`:
+  - model availability NUX count persistence
+  - current model selection persistence
+- Практический эффект:
+  - ещё два простых `ConfigEditsBuilder`-хвоста убраны из `tui/app`
+  - следующий audit можно делать уже вне этих дешёвых residual config-persist кейсов
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green auth-status step:
+  - `54f993f1f` — `refactor(gena): centralize persisted auth context`
+- В `gena-runtime` добавлены:
+  - `RuntimePersistedAuthContext`
+  - `get_runtime_persisted_auth_context(...)`
+- На этот helper переведены:
+  - `cli/src/login.rs` (`login status`)
+  - `tui/src/voice.rs` (`resolve_auth`)
+- Практический эффект:
+  - direct `CodexAuth::from_auth_storage(...)` больше не дублируется в CLI status-flow и voice auth bootstrap
+  - persisted auth read/token/account-id retrieval теперь централизованы в Gena-owned runtime layer
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -j1` PASS
+- После residual audit `turn-context`-оси выяснилось:
+  - в прод-коде TUI она практически закрыта,
+  - дальше там оставались в основном тестовые `OverrideTurnContext` callsite'ы,
+  - поэтому следующим shared seam был выбран не ещё один TUI helper, а общий `api key login` action.
+- На `codex-rs/chore/update-arch` зафиксирован compile-green auth step:
+  - `0225f5613` — `refactor(gena): centralize api key login action`
+- В `gena-runtime` добавлен shared helper:
+  - `login_runtime_auth_with_api_key(...)`
+- На него переведены:
+  - `cli/src/login.rs`
+  - `tui/src/onboarding/auth.rs`
+- Практический эффект:
+  - direct `login_with_api_key(...)` больше не дублируется в CLI и TUI onboarding
+  - shared auth action boundary ещё немного очищен без захода в deeper onboarding/login UX
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован новый compile-green high-ROI step уже после закрытия `auth/chatwidget` residuals:
+  - `5eb7090d0` — `refactor(gena): introduce turn context override boundary`
+- В `gena-types` добавлен нейтральный DTO:
+  - `GenaTurnContextOverride`
+- В `gena-runtime` добавлен shared helper:
+  - `build_runtime_turn_context_override(...)`
+- На этот слой переведены первые повторяющиеся `Op::OverrideTurnContext` callsite'ы в:
+  - `tui/src/app.rs`
+  - `tui/src/chatwidget.rs`
+- Практический эффект:
+  - payload для turn-context override больше не собирается только прямыми inline `Op::OverrideTurnContext { ... }` в TUI
+  - появился нейтральный Gena-owned boundary для дальнейшего тонкого выноса повторяющихся override-path'ов
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-types -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован маленький residual closeout step после logout boundary:
+  - `9354e4b7c` — `refactor(gena): route chatwidget home lookup through adapter`
+- В `tui/src/chatwidget.rs`:
+  - theme picker path переведён с direct `find_codex_home()` на `find_product_home()`
+- Практический эффект:
+  - ещё один прямой home lookup в TUI убран из upstream-shaped path
+  - это маленький шаг, но он логично закрывает residual auth/home glue в `chatwidget`
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green шаг после observability boundary:
+  - `f47a540b7` — `refactor(gena): centralize logout auth action`
+- В `gena-runtime` добавлены:
+  - `RuntimeLogoutResult`
+  - `logout_runtime_auth(...)`
+- На этот helper переведены:
+  - `cli/src/login.rs`
+  - `tui/src/chatwidget.rs`
+- Практический эффект:
+  - direct `codex_core::auth::logout(...)` больше не живёт в двух user-facing entrypoints
+  - logout result semantics теперь централизованы в Gena-owned runtime layer
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -p codex-tui -j1` PASS
+- Для уже зафиксированного observability boundary отдельно досинхронизирован lockfile:
+  - `e631d7ddf` — `build(gena): sync lockfile for observability runtime dep`
+- В `Cargo.lock` зафиксирована новая зависимость `codex-otel` для `gena-runtime`.
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green high-ROI step:
+  - `6662bd2b3` — `refactor(gena): centralize observability bootstrap`
+- В `gena-runtime`:
+  - добавлена зависимость `codex-otel`
+  - добавлен shared helper `build_runtime_otel_provider(...)`
+  - добавлен DTO `RuntimeOtelBootstrap`
+- На этот helper переведены:
+  - `exec/src/lib.rs`
+  - `tui/src/lib.rs`
+- Практический эффект:
+  - panic-safe `otel_init::build_provider(...)` больше не дублируется в двух entrypoints
+  - user-facing error message для OTEL bootstrap теперь собирается в одном Gena-owned месте
+  - `exec` и `tui` держат только wiring своих слоёв, а не локальную OTEL bootstrap policy
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-exec -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green шаг уже после закрытия `MCP`-оси:
+  - `4035a16a5` — `refactor(gena): route auth config loading through runtime`
+- На Gena-owned loaders переведены:
+  - `cli/src/login.rs`
+    - `load_config_or_exit(...)` теперь использует `gena_runtime::load_runtime_config(...)`
+  - `tui/src/voice.rs`
+    - `find_codex_home()` заменён на `find_product_home()`
+    - `Config::load_with_cli_overrides(Vec::new())` заменён на `gena_runtime::load_runtime_config(Vec::new(), None)`
+- Практический эффект:
+  - auth-adjacent entrypoints ещё меньше знают про прямой config/home loading через `codex_core`
+  - `login` и `voice` используют уже существующие Gena-owned boundaries вместо локального bootstrap glue
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p codex-cli -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один compile-green residual step внутри `MCP`-оси:
+  - `e984bf88f` — `refactor(gena): route mcp config loading through runtime`
+- В `cli/src/mcp_cmd.rs`:
+  - `Config::load_with_cli_overrides(...)` заменён на shared `load_mcp_runtime_config(...)`
+  - `find_codex_home()` заменён на `find_product_home()`
+- Практический эффект:
+  - `mcp_cmd` больше не держит прямой config loading path через `codex_core`
+  - add/login/logout/list/get ветки используют Gena-owned config/home boundary
+- Практический вывод:
+  - после persistence и config-loading шагов `MCP`-ось в основном сводится к OAuth interaction, transport probing и user-facing CLI formatting
+  - это уже менее выгодная зона для дальнейшего выноса
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p codex-cli -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green boundary step уже вне `ConfigEditsBuilder`-зоны:
+  - `7beaf621e` — `refactor(gena): centralize mcp config persistence`
+- В `gena-runtime` добавлены helper'ы:
+  - `replace_runtime_mcp_servers(...)`
+  - `add_runtime_mcp_server(...)`
+  - `remove_runtime_mcp_server(...)`
+- На них переведены в `cli/src/mcp_cmd.rs`:
+  - `run_add(...)` path для global MCP server persistence
+  - `run_remove(...)` path для global MCP server persistence
+- Практический эффект:
+  - `ConfigEditsBuilder::new(...).replace_mcp_servers(...).apply().await` больше не живёт напрямую в `cli/mcp_cmd`
+  - CLI оставлен с transport construction, validation, OAuth/login UI-flow и user-facing prints
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один compile-green шаг, который, вероятно, закрывает `ConfigEditsBuilder`-ось:
+  - `cd5243924` — `refactor(gena): centralize tui feature flag persistence`
+- В `gena-runtime` добавлен helper:
+  - `apply_runtime_feature_flag_updates(...)`
+- На него переведён в `tui/app` path:
+  - `AppEvent::UpdateFeatureFlags`
+- Практический эффект:
+  - persistence policy для feature flags больше не живёт локально в `tui/app`
+  - в `App` оставлены только in-memory updates, user-facing errors и Windows-specific side effects
+- Практический вывод:
+  - после `persist-*`, `skill/app toggles` и `feature flag persistence` зона `ConfigEditsBuilder` в `tui/app` близка к исчерпанию по ROI
+  - дальше уже остались одиночные low-value кейсы и platform-specific flows
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один compile-green шаг в `ConfigEditsBuilder`-зоне:
+  - `40c9cfa07` — `refactor(gena): centralize skill and app config toggles`
+- В `gena-runtime` добавлены узкие helper'ы:
+  - `set_runtime_skill_enabled(...)`
+  - `set_runtime_app_enabled(...)`
+- На них переведены в `tui/app`:
+  - `AppEvent::SetSkillEnabled`
+  - `AppEvent::SetAppEnabled`
+- Практический эффект:
+  - repeated `with_edits(...).apply().await` glue для skill/app toggle persistence больше не живёт локально в `tui/app`
+  - в `App` остались только UI-side effects, refresh-from-disk и user-facing error messages
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green шаг в `ConfigEditsBuilder`-зоне:
+  - `543beeb87` — `refactor(gena): centralize profiled tui config edits`
+- В `gena-runtime` добавлен shared helper:
+  - `apply_runtime_profiled_config_builder(...)`
+- На него переведены простые profiled `persist-*` операции в `tui/app`:
+  - model selection
+  - personality selection
+  - realtime audio selection
+  - notice acknowledgements
+  - model migration acknowledgement
+- Практический эффект:
+  - `ConfigEditsBuilder::new(...).with_profile(...).set_*().apply().await` больше не размазан по этим веткам в `tui/app`
+  - в `App` остались user-facing message shaping и локальные UI-side effects
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один compile-green шаг после pause на `session/thread`:
+  - `44fdb000c` — `refactor(gena): move tui config mutation helpers into runtime`
+- В `gena-runtime` вынесены:
+  - `rebuild_runtime_config_for_cwd(...)`
+  - `apply_runtime_config_policy_overrides(...)`
+- На них переведён `tui/app` для:
+  - config rebuild for cwd
+  - refresh-from-disk path
+  - carry-forward approval/sandbox policy overrides
+- Практический вывод:
+  - следующий high-ROI boundary после `session/thread` действительно сместился в `tui app config mutation / rebuild`
+  - это оказалось выгоднее, чем дальше механически резать `thread/session`
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один compile-green шаг внутри `session/thread boundary`:
+  - `7c3f7b295` — `refactor(gena): route tui session switching through runtime`
+- На runtime helper'ы дополнительно переведены in-app пути в `tui/app`:
+  - resume existing session after picker
+  - fork current session
+- Практический эффект:
+  - `tui/app` больше не вызывает напрямую `resume_thread_from_rollout(...)` и `fork_thread(...)` в этих runtime-flow ветках
+  - в `App` остались UI/picker/rebuild/reinit responsibilities, а не сам thread operation glue
+- Подтверждены проверки для этого шага:
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green этап внутри `session/thread boundary`:
+  - `3878d263d` — `refactor(gena): move thread bootstrap into runtime`
+- В `gena-runtime` вынесены общие helper'ы для:
+  - `ThreadManager` factory
+  - default model resolution
+  - start/resume thread bootstrap
+  - fork thread bootstrap
+- На эти helper'ы переведены:
+  - `codex-exec`
+  - `codex-tui/src/app.rs`
+- Практический эффект:
+  - `AuthManager + ThreadManager + start/resume/fork` больше не собираются локально отдельно в двух entrypoints
+  - следующий анализ можно делать уже по остаточному thread/session knowledge, а не по базовому bootstrap glue
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-exec -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован и compile-green проверен первый реальный этап `session/thread boundary`:
+  - `dd06815f5` — `refactor(gena): extract session and thread lookup boundary`
+- Добавлен нейтральный shared DTO:
+  - `gena-types::GenaSessionTarget`
+- В `gena-runtime` вынесены Gena-owned helper'ы для:
+  - session target lookup по `id/name`
+  - latest session target lookup
+  - thread id resolution из rollout/meta
+  - session cwd resolution
+  - cwd comparison policy
+- На эти helper'ы переведены:
+  - `codex-exec` path для `resume`
+  - `codex-tui` path для `resume/fork`
+  - `codex-tui` session cwd metadata / cwd compare path
+- Практический вывод аудита подтвержден кодом:
+  - `session/thread boundary` даёт больший ROI, чем абстрактный широкий `runtime orchestration layer`
+  - следующий сильный шаг внутри этого направления — `ThreadManager / session bootstrap boundary`
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-types -p gena-runtime -p codex-exec -p codex-tui -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один compile-green cleanup шаг:
+  - `a92986daa` — `refactor(gena): simplify cli subcommand dispatch`
+- В `codex-cli` dispatch дополнительно сведен к helper’ам:
+  - `run_interactive_command(...)`
+  - `run_exec_command(...)`
+  - `run_login_command(...)`
+  - `run_logout_command(...)`
+- Практический эффект:
+  - ветки `None` / `Resume` / `Fork` больше не дублируют `run_interactive_tui + handle_app_exit`
+  - ветки `Exec` / `Review` больше не дублируют `prepend_config_flags + codex_exec::run_main`
+  - `Login` / `Logout` больше не держат заметный nested flow прямо внутри `match subcommand`
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p codex-cli -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один compile-green шаг:
+  - `79c561928` — `refactor(gena): route cli exit handling through runtime plan`
+- В `gena-runtime` добавлен единый helper для exit orchestration:
+  - `RuntimeExitPlan`
+  - `plan_runtime_exit(...)`
+- После этого `codex-cli` больше не собирает exit handling из двух отдельных вызовов (`fatal` + `formatting`), а использует единый runtime-plan.
+- Дополнительно на предыдущем boundary-шаге update messaging перенесён в `gena-branding`, а shell execution для `UpdateAction` оставлен в `codex-cli` как platform-specific зона.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-runtime -p codex-cli -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован ещё один небольшой compile-green шаг:
+  - `501c0d7ba` — `refactor(gena): reduce cli surface for features and branding`
+- В `gena-runtime` дополнительно вынесено:
+  - feature list table formatting,
+  - enable/disable feature output formatting.
+- В `gena-branding` добавлен общий root CLI identity helper:
+  - `CliIdentity`
+  - `cli_identity(...)`
+  - `current_cli_identity()`
+- `codex-cli` после этого:
+  - больше не форматирует feature rows/messages сам,
+  - больше не дублирует root command wiring отдельно для parse/completion path,
+  - использует общий brand-aware builder для root command surface.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-branding -p codex-cli -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован следующий compile-green шаг:
+  - `c69e8c288` — `refactor(gena): move cli exit and startup flows into runtime`
+- Для этого шага введен ещё один shared boundary в `gena-types`:
+  - `GenaAppExitInfo`
+  - `GenaExitReason`
+- В `gena-runtime` вынесено:
+  - exit message formatting,
+  - fatal-exit classification,
+  - clear-memories output formatting,
+  - under-development feature warning formatting,
+  - interactive startup preparation,
+  - dumb-terminal gating decision и metadata для confirm path.
+- `codex-cli` после этого стал тоньше ещё в двух зонах:
+  - exit/update shell теперь только конвертирует `AppExitInfo -> GenaAppExitInfo` и печатает строки из runtime,
+  - interactive startup теперь держит только реальный `confirm(...)` IO и запуск `codex_tui::run_main(...)`.
+- Подтверждены проверки для этого шага:
+  - `cargo fmt --all`
+  - `cargo check -p gena-types -p gena-runtime -p codex-cli -j1` PASS
+- На `codex-rs/chore/update-arch` продолжено thinning `codex-cli` после первых слоев `gena-branding` / `gena-config` / `gena-upstream-adapter`:
+  - `68bb1ade9` — `refactor(gena): move cli feature and memory flows into runtime`
+  - `190fcec0b` — `refactor(gena): move interactive cli shaping behind neutral dto`
+  - `282847316` — `refactor(gena): move cli command naming helpers into branding`
+- Из `codex-cli` дополнительно вынесено:
+  - feature list/edit orchestration,
+  - state/memory reset path,
+  - interactive resume/fork shaping,
+  - brand-aware current command naming и command rewrite helpers.
+- Для interactive shaping зафиксирован важный архитектурный поворот:
+  - попытка вынести orchestration через прямую зависимость `gena-runtime -> codex-tui::Cli` привела к cycle dependency,
+  - итоговое compile-green решение: ввести нейтральный DTO `GenaInteractiveCli` в `gena-types`,
+  - `cli` теперь конвертирует `TuiCli <-> GenaInteractiveCli`, а orchestration живет в `gena-runtime`.
+- На этом этапе `gena-runtime` уже используется не как заготовка, а как реальный orchestration/state boundary для `cli` / `tui` / `exec`.
+- Подтверждены дополнительные проверки после новых шагов:
+  - `cargo check -p gena-types -p gena-runtime -p codex-cli -j1` PASS
+  - `cargo check -p gena-branding -p codex-cli -j1` PASS
+- В `codex-rs` подготовлена и запушена архитектурная ветка `chore/update-arch`:
+  - commit: `0e540dcc8` (`refactor(gena): introduce branding config and upstream adapter layers`)
+  - `origin/chore/update-arch` синхронизирован с локальным `HEAD`.
+- В кодовой базе начат additive-рефакторинг под целевую архитектуру `gena`, без big-bang rewrite upstream-структуры.
+- Добавлены первые Gena-owned crates:
+  - `gena-branding`
+  - `gena-config`
+  - `gena-upstream-adapter`
+- Вынесено в `gena-branding`:
+  - определение бренда по имени бинаря,
+  - product identity (`display/help/title/command naming`),
+  - brand-aware rewrite для команд resume/help UX.
+- Вынесено в `gena-config`:
+  - brand-aware default home dir,
+  - brand-aware project config namespace,
+  - brand-aware default provider policy (`llmops` для `gena`).
+- Вынесено в `gena-upstream-adapter`:
+  - bootstrap wrappers для `cli` / `tui` / `exec`,
+  - config load helpers,
+  - resume command builder,
+  - OSS provider resolution,
+  - unified formatting для config/exec policy load errors.
+- На новые boundary-слои переведены:
+  - `codex-cli`
+  - `codex-tui`
+  - `codex-exec`
+  - `codex-core` (часть config policy)
+  - `codex-utils-home-dir`
+- Подтверждены проверки после рефакторинга:
+  - `cargo fmt --all`
+  - `cargo check -p gena-branding -p gena-config -p gena-upstream-adapter -p codex-core -p codex-cli -p codex-tui -p codex-utils-home-dir -j1` PASS
+  - `cargo check -p gena-upstream-adapter -p codex-exec -p codex-tui -p codex-cli -j1` PASS
+- Неустраненные warnings остались только исторические:
+  - multi-bin warnings,
+  - часть `dead_code`,
+  - nightly-only warnings у `cargo fmt` config.
+- Следующими шагами на этой же ветке выполнено дальнейшее разрезание Gena-owned boundaries:
+  - `bd7c7157e` — `refactor(gena): extract shared branding types crate`
+  - `79bfebfd9` — `refactor(gena): introduce runtime bootstrap layer`
+  - `8f7a178d9` — `refactor(gena): route cli runtime config through gena runtime`
+- Добавлен новый crate `gena-types`:
+  - `ProductBrand` вынесен в shared type-layer,
+  - `gena-branding` оставлен как branding-specific слой с `pub use` совместимостью,
+  - `core` и `gena-config` переведены на зависимость от `gena-types`.
+- Добавлен новый crate `gena-runtime`:
+  - общий bootstrap context для `codex_home` / `config_toml` / `cloud_requirements`,
+  - общий provider/model resolution для OSS bootstrap,
+  - runtime-level config helpers для `cli`.
+- На `gena-runtime` переведены:
+  - `codex-exec`
+  - `codex-tui`
+  - часть `codex-cli`
+- Дополнительно после этого из `codex-cli` в `gena-runtime` вынесен state-reset helper:
+  - `clear_runtime_memories(...)`
+  - `ClearMemoriesResult`
+- Подтверждены проверки для новых шагов:
+  - `cargo check -p gena-types -p gena-branding -p gena-config -p codex-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+  - `cargo check -p gena-runtime -p codex-exec -p codex-tui -j1` PASS
+  - `cargo check -p gena-runtime -p codex-cli -p codex-exec -p codex-tui -j1` PASS
+  - `cargo check -p gena-runtime -p codex-cli -j1` PASS
+- Практический вывод текущего этапа:
+  - `gena-runtime` уже стал реальным orchestration/boundary слоем, а не только архитектурной заготовкой,
+  - наиболее выгодный следующий путь пока не `plugin-api`, а дальнейшее срезание оставшегося runtime/bootstrap/state knowledge из `cli`.
+
+## 2026-03-08
+- В `codex-rs` выполнен merge `chore/upstream-sync-codex-rust-v0.107.0-publish` -> `fix/macos-m1-build-remarks`:
+  - merge commit: `71eae4c45` (`merge: sync v0.107.0 publish into macos fixes, keep logo settings`).
+- В `codex-rs` зафиксирован и запушен фикс regress брендинга для debug-бинарей:
+  - commit: `797f7101c` (`fix(gena): restore branding for gena-debug and document mac distribution flow`),
+  - `gena-debug` снова определяется как `Gena` (а не `Codex`).
+- Подтверждена сборка и установка debug-профиля через новый скрипт:
+  - `scripts/build-and-install-gena.sh debug`,
+  - обновлены `/usr/local/bin/gena-debug`, `/usr/local/bin/gena-tui-debug` и копии в `/root/download`.
+- Документация обновлена:
+  - `codex-rs/README.md`: добавлен `Gena macOS quick distribution flow` + ссылка на `docs/distribution-linux-macos.md`;
+  - `Obsidian/DL.md`: добавлен decision про macOS distribution flow (build once + installer, Rust только на машине сборки).
+- Дополнительно закрыты и запушены post-merge фиксы ветки `fix/macos-m1-build-remarks`:
+  - `dba059f36` — first-run `gena*`: default provider для fresh `CODEX_HOME` переключен на `llmops` (без обязательного ChatGPT login flow).
+  - `cc3f2aca7` — macOS packaging: защита от `sccache` fd-limit (`Too many open files`) в release package flow.
+  - `55dd79e5d`, `08628c51c` — installer UX: установка с приоритетом npm global bin и bootstrap npm при отсутствии.
+- В `codex-rs` выполнен merge `fix/macos-m1-build-remarks` -> `main` и push:
+  - `origin/main` обновлён до `c1e24aa25`.
+
+## 2026-03-02
+- В `codex-rs` выполнен merge ветки `feature/tui-logo-splash-screen` в `main`:
+  - merge commit: `031027e57` (`merge(tui): splash/logo pipeline for gena-tui`)
+  - `main` запушен в `origin`.
+- Подтверждено, что splash/logo пакет (`branding.rs`, `history_cell.rs`, `lib.rs`, `startup_splash.rs`, `assets/gena-logo.jpg`) теперь в `codex-rs/main`.
+
+## 2026-02-28
+- В `codex-rs` на ветке `feature/tui-logo-splash-screen` выполнен и запушен коммит `eb9d1530f`:
+  - `tui/src/branding.rs`: добавлен отдельный logo pipeline `natural_detail` (5 этапов: tonal remap, contour boost, accent boost, micro-dither, landmark forcing),
+  - `tui/src/lib.rs`, `tui/src/history_cell.rs`, `tui/src/startup_splash.rs`, `tui/assets/gena-logo.jpg`: интеграция брендинга/splash экрана.
+- Проведены итерации по читаемости landmarks; агрессивный `strict`-overlay вариант откатан.
+- Зафиксирован рабочий UX baseline: дефолт `GENA_TUI_LOGO_VARIANT=natural`.
+- Проверка сборки: `cargo build -p codex-tui --bin gena-tui -j1` PASS.
+
+## 2026-02-11
+- В кодовом репозитории создана и запушена ветка `sb-feature/aqa-agent-loop`.
+- Реализован базовый универсальный loop в sandbox-пакете `@aqa/sb-cli-agent-loop` с разделением `Planner/Actor/Checker`.
+- Добавлено intent-routing стратегиями для `chat/dev/stop`, с fallback в `need_user_input`.
+- Добавлен llmops driver поверх chat/completions API (без Responses API).
+- Интегрированы адаптеры base-агентов в loop tool registry:
+  - `fs_agent_exec`
+  - `project_agent_exec`
+- В chat-режиме добавлен отдельный флаг loop:
+  - `/agent on|off` оставлен для базового project-agent.
+  - `/agent loop on|off` включает/выключает loop-путь.
+- Реализован flow `ask_user -> resume` в chat через `/permit <permission> on|off`.
+- Введён централизованный `ToolOrchestrator` для `approval/sandbox/retry` (ориентир по структуре Codex).
+- Добавлен persistence слоя loop:
+  - `sessionId` в `Context`;
+  - snapshot состояния в `<sessionId>.json`;
+  - trace-события в `<sessionId>.trace.jsonl`;
+  - env-переменные `SB_LOOP_SESSION_ID`, `SB_LOOP_STATE_DIR`.
+- Добавлен `candidate:check` (build + unit + bin check + pack + isolated install + smoke).
+- Все unit-тесты и build проходят на текущем срезе; candidate check PASS.
+- Обновлён side-артефакт:
+  - `/root/download/agents/aqa-sb-cli-agent-loop-0.0.1.tgz`
+  - sha256: `1604b70de48736602c9b71ac6b15ba854050fcce43b9a44549e5c52f71f3d2e7`
+- Добавлены policy-guards в `LoopEngine`:
+  - `maxReplans`
+  - `maxToolCalls`
+  - timeout guards для `planner/actor/checker`
+- Добавлен trace-view CLI:
+  - `sb-cli-agent-loop trace list`
+  - `sb-cli-agent-loop trace show <sessionId>`
+- Добавлен e2e multi-cycle тест на сценарий:
+  - `ask_user -> approve -> done` с persisted session.
+- Выпущен новый проверенный candidate-артефакт:
+  - `/root/download/agents/aqa-sb-cli-agent-loop-0.0.1.tgz`
+  - sha256: `68454d90c06f73bec61d1c6e2dc07a7960d27e1e0bef906ef32b2ad4a886e61f`
+- Коммит финального loop-среза: `529adec`.
+
+## 2026-02-08
+- В `develop` добавлен `AGENTS.md` с bootstrap-инструкцией для новых сессий (commit `749469b`).
+- README дополнен блоками «Версии (актуально)» и краткими release notes `0.0.2` (commit `f0c3c52`).
+- Ветка `sb-feature/project-fs-codex-reuse` запушена в `origin` (commit `8d06e77`).
+- Изменения влиты в `develop` и запушены (merge commit `ea38187`).
+- Поднят `@aqa/core` до `0.0.2`; для sandbox project-agent поднята версия до `0.0.2`.
+- В `@aqa/core` добавлено детерминированное root/scope-поведение:
+  - приоритет root: `AQA_REPO_ROOT` -> `INIT_CWD` -> `cwd`;
+  - `FS_SCOPE_ERROR` для путей вне root;
+  - `PATH_NOT_FOUND` для несуществующей папки;
+  - `pwd`/«текущий путь» возвращает `repo_root`.
+- В `@aqa/agent-cli`:
+  - включён дефолтный `AGENT=on` в chat;
+  - включён чистый рендер ответа project-agent (без JSON-обёртки в UI).
+- Обновлён `README.md` в кодовом репозитории под 0.0.2 (артефакты, root/scope, `AQA_REPO_ROOT`) и запушен в `develop` (commit `0983222`).
+- Пересобраны и обновлены side-артефакты:
+  - `/root/download/agents/aqa-sb-cli-llmops-project-agent-0.0.2.tgz`
+  - `/root/download/agents/aqa-agent-cli-0.0.2.tgz`
+- Добавлены/обновлены e2e-regression тесты на кейсы `pwd` и несуществующей папки по имени.
+
+- В `@aqa/core` расширена логика project-agent для работы с проектом в стиле codex:
+  - добавлен `readTextSlice` (slice-чтение по `offset/limit`);
+  - добавлен `grepFiles` (поиск через `rg` с лимитами и timeout);
+  - обновлены инструкции агенту: сначала `grep`, затем точечное чтение файла.
+- В sandbox `@aqa/sb-cli-llmops-project-agent` переиспользована core-реализация:
+  - `src/feature/fsAgent.ts` и `src/feature/projectAgent.ts` переведены на thin wrapper вокруг `@aqa/core`.
+- В sandbox CLI добавлен first-run bootstrap env/token (аналог UX-сборки):
+  - подключены `ensureUserEnvLoaded`, `resolveDotenvQuiet`, `ensureToken`;
+  - добавлены env-файлы и `assets/agent.env`.
+- В чате sandbox-агента включён режим project-agent по умолчанию (`/agent on` default).
+- Обновлены тесты под новое поведение и новый текст:
+  - unit и e2e-mock проходят.
+- Собрана и выложена обновлённая self-contained сборка:
+  - `/root/download/agents/aqa-sb-cli-llmops-project-agent-0.0.1.tgz` (219680 bytes).
+
+## 2026-02-07
+- В `sb-agent-ux` выполнены UX-правки чата: убран hint `(пиши здесь)`, `agent>` заменён на `› agent` (фуксия), унифицирован `› aqa`, удалена лишняя пустая строка перед первым ответом агента.
+- Собран и проверен обновлённый sandbox-архив `aqa-sb-agent-cli-ux-0.0.1.tgz`; подтверждена переустановка и применение UI-изменений.
+- Изменения UX перенесены в основной `@aqa/agent-cli` (коммит `b540545`), тесты `agent-cli` пройдены.
+- Добавлен ignore для `*.tgz` и выполнен bump версии `@aqa/agent-cli` до `0.0.2` (коммит `3f27e51`).
+- Ветка `sb-feature/update_ux_ui` вмержена в `develop` и запушена (merge-коммит `89476d1`).
+
+## 2026-02-04
+- Скопирован `CoreDocumentsStandard.md` из `/root/pr-obsidian/guide` в корень проекта Obsidian.
+- Добавлены `ROADMAP.md` и `CLI_UX_GUIDELINES.md` в Obsidian и запушены (commit `a569e75`).
+
+## 2026-02-03
+- Синхронизирован Obsidian‑проект с последней влитой фичей в `develop`.
+- Зафиксирована информация по PR #26 `infra/add-scripts-build-cli-agent` (merge `76bae07`).
+- Учтено обновление README в `405fb87`.
+- Loop из sandbox перенесён в боевой `@aqa/agent-cli`:
+  - добавлен runtime `Planner/Actor/Checker` в `packages/agent-cli/src/loop`;
+  - chat переключен на loop-path через `/agent loop on|off` + `/permit <permission> on|off`;
+  - добавлены команды CLI: `aqa-agent loop ...`, `aqa-agent trace list|show`.
+- Поднята версия `@aqa/agent-cli` до `0.0.3`.
+- Прогнаны проверки:
+  - `npm --workspace @aqa/agent-cli run build` PASS;
+  - `npm --workspace @aqa/agent-cli run test` PASS;
+  - smoke: `aqa-agent loop dev` (mock) PASS.
+- Собран и выложен side-артефакт боевого агента:
+  - `/root/download/agents/aqa-agent-cli-0.0.3.tgz`
+  - sha256: `4f33e513e7fe7b64f5bf8ead4f4c53189ecd06015fe3d57428d23e306e647d96`
+- Коммит: `3a34239` (`feat(agent-cli): port sandbox loop runtime and bump to 0.0.3`).
+- Исправлен релизный процесс упаковки `@aqa/agent-cli`:
+  - в `packages/infra/scripts/pack-agent-cli.sh` добавлены обязательные проверки standalone-пакета;
+  - скрипт теперь фейлится, если tgz без bundled `@aqa/core` или если не проходит isolated install/smoke.
+- Подтверждён новый рабочий side-артефакт:
+  - `/root/download/agents/aqa-agent-cli-0.0.3.tgz`
+  - sha256: `ec13da5b93450264c9a092494e469830f0b2263bc68180d83424c27446986d73`
+- Ветка `sb-feature/aqa-agent-loop` влита в `develop` и запушена.
+  - merge commit: `1a0dae1`
+  - release-check commit: `9904549`
+
+## 2026-02-12
+- Создана новая ветка кода `sb-feature/codex-level-agent` для отдельного цикла по codex-level агенту.
+- Создан новый sandbox package `packages/sandboxes/sb-cli-codex-agent`.
+- Стратегия перенесена из кода в Obsidian:
+  - `CODEX_LEVEL_AGENT_STRATEGY.md`
+- Удалена дублирующая стратегия из кода (`packages/sandboxes/sb-cli-codex-agent/STRATEGY.md`), чтобы единый источник стратегии оставался в Obsidian.
+- Для `sb-cli-codex-agent` закрыт Phase B (codex-style alignment по блокам loop+tools):
+  - planner переведён на policy-first routing (`PlannerPolicyRouter` + `intentRouting` в `codex-policy`);
+  - добавлены tool contracts (`ToolSpec`) и pre-exec валидация required input в `ToolOrchestrator`.
+- Проверки Phase B:
+  - `unit` PASS
+  - `e2e-mock` PASS
+  - `check-candidate` PASS (`e2e-llm` env-gated skip без `RUN_E2E_LLM=1`).
+- Кодовый commit Phase B: `9d646c9`.
+- Для `sb-cli-codex-agent` добавлен формальный codex parity-control слой:
+  - `CODEX_PARITY_CHECKLIST.md` (matrix + delivery protocol)
+  - `src/parity/aqa-extensions.ts` (разрешенные отклонения от Codex)
+  - unit: `parity.extensions.test.ts`.
+- Закреплено правило разработки: `Codex-first`, все отклонения только через явный `AQA extension`.
+- Кодовый commit: `a310f59`.
+- `CODEX_PARITY_CHECKLIST.md` перенесён из sandbox-кода в Obsidian как единый источник parity-матрицы.
+- В кодовом репозитории удалён дублирующий файл checklist из `packages/sandboxes/sb-cli-codex-agent`.
+- Для `sb-cli-codex-agent` закрыт Phase D:
+  - расширена lifecycle trace-модель (`loop_started`, `cycle_started`, `resume_applied`, `permission_requested`, `decision_emitted`, `policy_guard_triggered`);
+  - обновлен trace-view summary под новые события.
+- Проверки Phase D:
+  - `unit` PASS
+  - `e2e-mock` PASS
+  - `check-candidate` PASS
+- Кодовый commit Phase D: `ee31cb9`.
+- Создана новая ветка `sb-feature/codex-fork`.
+- Добавлен новый sandbox package `packages/sandboxes/sb-codex-fork` для Rust-fork workflow по `openai/codex`.
+- Добавлены скрипты:
+  - `bootstrap-codex-upstream.sh`
+  - `status.sh`
+- Добавлен `.gitignore` для локального `rust/codex/` checkout.
+- Кодовый commit: `359fbc9`.
+- Добавлены новые документы схемы Rust fork:
+  - `CODEX_FORK_ARCHITECTURE.md`
+  - `CODEX_FORK_RELEASE_SYNC.md`
+- Для `sb-codex-fork` выполнен bootstrap upstream `openai/codex` и зафиксирован upstream pin:
+  - `76256a8ceca6c4f6ff99d7234e2ecebda6c8483e`.
+- В package добавлен pin workflow:
+  - `scripts/pin-upstream.sh`
+  - `UPSTREAM_PIN.md`
+- Улучшен bootstrap-script: repair логика для случая битого checkout/HEAD.
+- Кодовый commit: `cd0e98d`.
+- Добавлен `CODEX_FORK_PARITY_MATRIX.md` (MATCH/GAP/EXT по доменам для Rust fork Codex).
+- Добавлен `CODEX_FORK_ADAPTATION_PLAN_CHAT_COMPLETIONS.md` (минимальный план адаптации под `llmops`/`ollama`).
+- Обновлен `NOW.md`: следующий шаг — command/flag parity table и contract tests на CLI surface.
+- Добавлен `CODEX_FORK_COMMAND_FLAG_PARITY.md` (таблица command/flag parity по upstream codex + contract-test набор).
+- Актуализирован `NOW.md`: следующий шаг — skeleton contract-tests на CLI surface parity и интеграция в `check-candidate`.
+- Для `sb-codex-fork` добавлен skeleton контрактных parity-проверок CLI surface:
+  - `scripts/check-cli-parity-contracts.mjs` (source-level checks по upstream файлам `main.rs/tui cli/exec cli/cloud/mcp`)
+  - `scripts/check-candidate.sh` (gate: `status + parity:contracts`).
+- В `package.json` `sb-codex-fork` добавлены scripts:
+  - `parity:contracts`
+  - `check-candidate`
+  - `candidate:check`
+- Обновлен `README.md` `sb-codex-fork` под новый test/gate контур.
+- Прогон проверок:
+  - `npm --workspace @aqa/sb-codex-fork run check-candidate` PASS.
+- Кодовый commit: `105525a`.
+- Для `sb-codex-fork` добавлены runtime parity-проверки CLI:
+  - `scripts/check-cli-runtime-parity.mjs` (проверки `codex --help`, `codex exec --help`, `codex resume --help`, `codex mcp --help`, conflict-case для `--full-auto` vs `--dangerously-bypass-approvals-and-sandbox`).
+- В candidate gate добавлен runtime шаг:
+  - `scripts/check-candidate.sh` теперь: `status + parity:contracts + parity:runtime`.
+- В `package.json` добавлен script:
+  - `parity:runtime`.
+- Обновлен `README.md` (`Runtime parity mode`, best-effort/strict).
+- Проверки:
+  - `npm --workspace @aqa/sb-codex-fork run check-candidate` PASS.
+  - `parity:runtime` в текущем окружении возвращает `SKIP` из-за отсутствия собранного `codex` binary.
+- Диагностика сборки codex binary:
+  - `cargo build -p codex-cli --bin codex` (в `codex-rs`) FAIL: linker errors `cannot find -llog`, `cannot find -lunwind`.
+- Кодовый commit: `2705562`.
+- В `sb-codex-fork` введена pinned runtime binary policy:
+  - runtime parity по умолчанию использует `packages/sandboxes/sb-codex-fork/bin/codex`;
+  - candidate gate запускает strict runtime (`STRICT_RUNTIME_PARITY=1`) и падает при отсутствии pinned binary.
+- Добавлены изменения:
+  - `.gitignore`: `bin/*` + исключение `bin/.gitkeep`
+  - `bin/.gitkeep`
+  - `scripts/pin-binary.sh` + npm script `pin:bin`
+  - обновлен `scripts/check-cli-runtime-parity.mjs` (pinned path + strict fail semantics)
+  - обновлен `scripts/check-candidate.sh` (strict runtime + pinned `CODEX_BIN`)
+  - обновлен `README.md` под pinned/strict workflow.
+- Проверка:
+  - `check-candidate` теперь корректно фейлится без `bin/codex` (ожидаемое поведение по policy).
+- Кодовый commit: `71cad8c`.
+- Для `sb-codex-fork` стартован этап `chat/completions` адаптации провайдеров `llmops` + `ollama`.
+- Добавлен adapter skeleton:
+  - `adapters/chat-completions/contracts.mjs`
+  - `adapters/chat-completions/mapper.mjs`
+  - `providers/provider-config.schema.json`
+  - `providers/providers.example.json`
+  - `scripts/validate-provider-config.mjs`
+  - `test/chat-completions.adapters.test.mjs`
+- В `package.json` добавлены scripts:
+  - `providers:validate`
+  - `unit:adapters`
+- Проверки:
+  - `npm --workspace @aqa/sb-codex-fork run providers:validate` PASS
+  - `npm --workspace @aqa/sb-codex-fork run unit:adapters` PASS
+- Кодовый commit: `8fadd91`.
+- Для `sb-codex-fork` adapter-layer доведен до runtime skeleton:
+  - добавлен `adapters/chat-completions/client.mjs` (`runChatCompletions` с pluggable `fetchImpl`).
+- Добавлен e2e-mock контур на provider switch:
+  - `test/chat-completions.e2e-mock.test.mjs` покрывает `llmops` и `ollama` пути.
+- В `package.json` добавлены scripts:
+  - `e2e:mock`
+  - `test:adapters`
+- Обновлен `README.md` под runtime entrypoint и e2e-mock проверки.
+- Проверки:
+  - `npm --workspace @aqa/sb-codex-fork run providers:validate` PASS
+  - `npm --workspace @aqa/sb-codex-fork run unit:adapters` PASS
+  - `npm --workspace @aqa/sb-codex-fork run e2e:mock` PASS
+- Кодовый commit: `2c91c8d`.
+- Реализован sandbox-level `Unified Agent Protocol` (UAP) каркас:
+  - normalized messages/tools/tool_calls формат
+  - adapters: `anthropic`, `openai-chat`, `openai-responses`
+  - registry для выбора адаптера.
+- Добавлены файлы:
+  - `adapters/uap/protocol.mjs`
+  - `adapters/uap/openai-chat-adapter.mjs`
+  - `adapters/uap/openai-responses-adapter.mjs`
+  - `adapters/uap/anthropic-adapter.mjs`
+  - `adapters/uap/registry.mjs`
+  - `test/uap.adapters.test.mjs`
+- В `package.json` добавлен script `unit:uap`; `test:adapters` расширен до `unit:adapters + unit:uap + e2e:mock`.
+- Проверки:
+  - `npm --workspace @aqa/sb-codex-fork run unit:uap` PASS
+  - `npm --workspace @aqa/sb-codex-fork run test:adapters` PASS
+- Кодовый commit: `1476843`.
+- Принято решение перейти на отдельный Rust repo flow (вместо хранения runtime-правок внутри игнорируемого `rust/codex` в parent repo).
+- Поднят отдельный локальный Rust fork repo:
+  - `/root/pr-infra-tools-aqa/gena-rs`
+  - remotes: `upstream=openai/codex`, `origin=Mikhailnt108/codex`.
+- Создан GitHub fork: `https://github.com/Mikhailnt108/codex`.
+- В Rust fork создана ветка `feature/chat-completions-wire-api-scaffold`.
+- Применен scaffold patch и запушен первый Rust-first commit:
+  - `9e8f8a6` (`feat(core): scaffold chat-completions wire api variant`)
+  - изменены `codex-rs/core/src/model_provider_info.rs` и `codex-rs/core/src/client.rs`.
+- В orchestration repo сохранен patch workflow как fallback/trace:
+  - `patches/0001-chat-completions-wire-api-scaffold.patch`
+  - `scripts/apply-rust-patch.sh`
+  - npm script `patch:apply:chat-completions`.
+
+## 2026-02-17
+- Подтянуты обновления Obsidian-репозитория на Desktop Ubuntu:
+  - `git pull --rebase origin main` в `/home/ai-lab/ProjectsObsidian/aqa-agent-framework-npm-obsidian` PASS.
+- Создан локальный каталог для отдельного Rust fork workflow:
+  - `/home/ai-lab/ProjectsInfraToolsAQA/gena-rs`.
+- Клонирован актуальный репозиторий Rust fork:
+  - `/home/ai-lab/ProjectsInfraToolsAQA/gena-rs/codex-rs`
+  - `origin`: `https://github.com/Mikhailnt108/codex-rs.git`
+  - ветка: `main`, статус `main...origin/main`.
+- В `packages/sandboxes/sb-codex-fork` добавлен build/ship контур для Rust fork:
+  - `scripts/build-rust-binaries.sh`
+  - `scripts/ship-to-download.sh`
+  - npm scripts: `build:rust`, `ship:download`, `build:ship`, `build:ship:safe`, `build:ship:ultra-safe`, `build:ship:install`, `build:ship:install:safe`.
+- В build/ship добавлены Android/Termux-stability меры:
+  - safe defaults (`jobs=1`, `nice=19`), очистка termux env paths/flags,
+  - build logs в `.logs/`,
+  - поддержка `termux-wake-lock`/`termux-wake-unlock`.
+- Добавлены version-aware launchers для запуска бинарей из `/root/download/agents` через `/tmp`:
+  - `aqa-codex-from-download`
+  - `aqa-codex-tui-from-download`
+  - режимы `latest` и конкретная версия (`0.0.1`).
+- Обновлена документация `README.md` sandbox-пакета под новые режимы build/ship/launcher.
+- Кодовый коммит запушен в `origin/sb-feature/codex-fork`:
+  - `3671f60` (`feat(sb-codex-fork): add build-ship pipeline and versioned download launchers`).
+
+## 2026-02-18
+- В `aqa-agent-framework-npm` добавлен скрипт проверки совместимости моделей `llmops` с tool-calling (`chat/completions`):
+  - `scripts/check-llmops-tools.sh`
+  - кодовый commit: `3ff6611` (`chore(scripts): add llmops tool-calling capability checker`).
+- В `codex-rs` продолжена интеграция `llmops` и стабилизация TUI/runtime:
+  - добавлен built-in provider `llmops` (commit `bda415e9b`),
+  - добавлен alias binary `aqa-codex-tui`,
+  - для unknown `chat/completions` моделей non-OpenAI отключен fallback metadata warning path,
+  - stream-обработчик в `core/src/codex.rs` переведен с panic на warn/drop для неконсистентных delta-событий,
+  - в header TUI добавлен явный provider badge (`model: ... [llmops]`).
+  - кодовый commit: `5bfa77db8` (`feat(tui): show provider in header and harden llmops stream handling`).
+- Проверки:
+  - `cargo build -p codex-tui --bin aqa-codex-tui` PASS,
+  - `cargo test -p codex-core get_model_info_chat_completions_unknown_does_not_use_fallback -- --nocapture` PASS,
+  - `cargo test -p codex-tui session_header_includes_reasoning_level_when_present -- --nocapture` PASS.
+- В Obsidian выполнена актуализация документов и cleanup:
+  - удален устаревший `CLI_UX_GUIDELINES.md`,
+  - обновлены `NOW.md` и `WORKLOG.md`,
+  - добавлен `.gitignore` с правилом `.obsidian/` для исключения локального vault metadata из git.
+
+## 2026-02-20
+- В `aqa-agent-framework-npm` добавлен скрипт проверки API-поддержки моделей `llmops`:
+  - `scripts/check-llmops-apis.sh` (responses vs chat/completions),
+  - коммит и push: `d73be72`.
+- В `codex-rs` добавлен парсинг tool-calls для `chat/completions`:
+  - legacy текстовый формат `<tool_call>/<function_call>` теперь превращается в `FunctionCall` (коммит `705f6c396`),
+  - нативные `tool_calls`/`function_call` из JSON ответа теперь парсятся и исполняются (коммит `fc859cce1`).
+- Debug сборка `aqa-codex-tui` пересобрана после изменений.
+
+## 2026-02-21
+- В `codex-rs` исправлен request payload для `chat/completions`: теперь передаются `tools` и `tool_choice=auto`.
+  - коммит: `3d7a8a429` (`feat(chat-completions): send tools payload and auto tool_choice`)
+  - файлы: `core/src/client.rs`, `codex-api/src/common.rs`, `codex-api/src/endpoint/chat_completions.rs`
+- В `codex-rs` добавлен startup prompt для токена non-OpenAI провайдера при отсутствии env key:
+  - коммит: `f9a081f31` (`feat(tui): prompt for missing provider token on startup`)
+  - файл: `tui/src/lib.rs`
+- Прогон проверок:
+  - `cargo check -p codex-api -p codex-core` PASS
+  - `cargo build -p codex-tui -j1` PASS
+- Runtime-валидация показала, что проблема запуска была на уровне модели (`gpt-5.3-codex` недоступна в `llmops`: `400 no healthy deployments`), а не в токене/сборке.
+
+## 2026-02-22
+- Для `codex-rs` добавлены и прогнаны точечные unit-тесты по `chat/completions`:
+  - `codex-api`: happy-path `tool_calls`, legacy `function_call` с object `arguments`, сериализация `tools/tool_choice` в request.
+  - `codex-core` (`core/src/client.rs`): native `tool_calls` parser, legacy markup parser, mapping tools -> chat/completions format.
+- Результаты `codex-rs`:
+  - 6/6 точечных тестов PASS.
+- Для `sb-codex-fork` добавлен env-gated real LLM smoke:
+  - новый script `e2e:llm`;
+  - новый тест `test/chat-completions.e2e-llm.test.mjs` (реальный `llmops` `chat/completions`, проверка структурированного `tool_calls`/`function_call`, защита от псевдо-тегов в тексте).
+- В `sb-codex-fork` adapter path расширен:
+  - поддержка `tools` / `tool_choice` в request;
+  - нормализация legacy `function_call` в response.
+- Проверки `sb-codex-fork`:
+  - `unit:adapters` PASS
+  - `e2e:mock` PASS
+  - `e2e:llm` PASS (wiring) / SKIP без `RUN_E2E_LLM=1`
+- Кодовый коммит и push:
+  - `b03cd1f` (`feat(sb-codex-fork): add env-gated e2e llm tool-calling smoke`)
+- Ветка `sb-feature/codex-fork` вмержена в `develop` и запушена:
+  - merge commit: `24434e9`
+  - сообщение: `merge(sb-codex-fork): integrate codex-rs chat-completions workflow`
+- В основном репозитории `aqa-agent-framework-npm` ветка `develop` вмержена в `main` и запушена:
+  - merge commit: `39bbfb5`
+  - сообщение: `merge(develop): promote codex-rs chat-completions integration to main`
+- В GitHub репозитории `aqa-agent-framework-npm` default branch переключена с `develop` на `main`.
+- В `codex-rs` добавлен и запушен отдельный тестовый коммит:
+  - `fb4918687` (`test(chat-completions): add parser and request coverage`)
+- В `codex-rs` ветка `feature/chat-completions-wire-api-scaffold` вмержена в `main` и запушена:
+  - merge commit: `39f92eb50`
+  - сообщение: `merge(chat-completions): llmops/codex-rs chat-completions support and tests`
+
+## 2026-02-22 — codex-rs 0.0.2 (llmops provider/model picker stabilization)
+- В `codex-rs` на ветке `feature/llmops-full-model-list-in-model-menu` завершены доработки `llmops`:
+  - `/model` picker теперь использует remote `/v1/models` каталог провайдера для `chat/completions`;
+  - текущая `config.model` сохраняется первой в списке даже если отсутствует в provider catalog;
+  - убрано подмешивание bundled `codex-*` моделей и placeholder `model` fallback;
+  - prompt токена в TUI скрывает ввод и прокидывает введенный токен в process env для последующего `/models` refresh без ручного `export`;
+  - добавлены `X-Copilot-User-Agent` и dual-auth (`Authorization` + `X-Copilot-User-Token`) для `llmops`;
+  - добавлен parser OpenAI-compatible `/v1/models` (`object=list`, `data[]`) в `codex-api`;
+  - добавлен `LLMOPS_WIRE_API` override (`responses` / `chat-completions`) для built-in `llmops` provider.
+- Поднята workspace version `codex-rs` с `0.0.1` до `0.0.2` и добавлен `CHANGELOG.md` с описанием релиза.
+- Проверки:
+  - `codex-api` unit test `endpoint::models::tests::parses_openai_compatible_models_list_response` PASS;
+  - широкий `cargo check -p codex-api -p codex-core -p codex-tui -j1` доходил до компиляции ключевых крейтов на `v0.0.2`, но был прерван из-за зависания вывода в этом окружении;
+  - runtime smoke подтвержден пользователем: `/model` показывает список `llmops` моделей без `export`, `LLMOPS_WIRE_API=responses` выполняет tool-calls.
+- Коммит feature-ветки:
+  - `fe88dddbe` — `release: bump to 0.0.2 with llmops provider fixes`
+- Merge в `codex-rs/main`:
+  - `1af88f655` — `merge(release): codex-rs 0.0.2 llmops provider and model picker improvements`
+- Практическая заметка по сборке на low-memory машине:
+  - использовать `RUSTFLAGS='-C link-arg=-Wl,--no-keep-memory' cargo build -p codex-tui --bin aqa-codex-tui -j1` для обхода `ld ... Bus error`.
+
+## 2026-02-22 — codex-rs gena rebrand layer (aliases + UX branding + home-dir migration)
+- В `codex-rs` реализован брендовый слой без тотального rename ядра (upstream-friendly подход):
+  - новые bin aliases в workspace:
+    - `gena` (CLI)
+    - `gena-tui` (TUI)
+  - сохранена совместимость с `codex`, `codex-tui`, `aqa-codex`, `aqa-codex-tui`.
+- В TUI добавлен `tui/src/branding.rs` и динамический бренд по `argv[0]`:
+  - `gena*` -> `Gena`
+  - `aqa-codex*` -> `AQA Codex`
+  - default -> `OpenAI Codex`
+- В TUI бренд применен в header/status и command-hints:
+  - `/model` hint -> `gena -m ...` (или соответствующий текущему бинарю)
+  - status login hint -> `gena login`
+- В CLI добавлены dynamic brand-aware hints:
+  - `resume` hint после выхода -> `gena resume ...`
+  - `--help` usage/bin name -> `gena ...`
+  - help header -> `Gena CLI`.
+- В `utils/home-dir` добавлена мягкая migration policy по умолчанию (при отсутствии `CODEX_HOME`):
+  - `gena*` -> `~/.gena-codex`
+  - если `~/.gena-codex` еще не существует, но есть `~/.aqa-codex`, используется `~/.aqa-codex`
+  - `aqa-codex*` -> `~/.aqa-codex`
+  - `codex*` -> `~/.codex`
+- В общем help-тексте config override (`-c/--config`) путь сделан brand-neutral:
+  - `~/.codex/config.toml` -> `$CODEX_HOME/config.toml`
+- Проверки:
+  - `cargo test -p codex-utils-home-dir -- --nocapture` PASS (8/8; включая gena/aqa home-dir cases)
+  - `gena-tui` debug build PASS (`target/debug/gena-tui`)
+  - `gena` debug build PASS (`target/debug/gena`)
+  - `gena --help` -> `Gena CLI`, `Usage: gena ...`
+  - `gena-tui --help` -> `$CODEX_HOME/config.toml`
+- На машине настроены symlink’и для запуска из PATH:
+  - `/usr/local/bin/gena`
+  - `/usr/local/bin/gena-tui`
+- Коммиты ветки `feature/gena-codex-rebrand`:
+  - `b6bd461a8` — `feat(branding): add gena aliases and home-dir migration fallback`
+  - `c723e1778` — `feat(branding): use dynamic gena command hints in cli and tui`
+  - `305860550` — `feat(branding): shorten gena tui display name`
+  - `6f7ba098d` — `feat(cli): make help usage respect gena command name`
+  - `d853f902b` — `feat(branding): improve gena help headers and config help text`
+- Merge в `codex-rs/main`:
+  - `45f0a5239` — `merge(branding): add gena aliases and rebrand UX layer`
+
+## 2026-02-23 — codex-rs gena-tui small improvements (model persistence + project config namespace)
+- В `codex-rs` на ветке `feature/small-improvements` завершена стабилизация `gena-tui` для `llmops`:
+  - исправлен persist выбора модели через `/model` + `/exit` (включая race/очередь событий);
+  - добавлен persist токена `LLMOPS_TOKEN`, введенного в prompt, в sidecar-файл `~/.gena-codex/provider_tokens/LLMOPS_TOKEN` (без записи в `config.toml`);
+  - улучшен UX header/picker для config-only моделей (`from config`, отдельные строки `provider` / `model` / `reasoning_effort`);
+  - исправлен конфликт с project config: для `gena*` project config namespace теперь `./.gena-codex/config.toml` (а не `./.codex/config.toml`).
+- Проведена диагностика причины сброса модели:
+  - подтверждено, что `~/.gena-codex/config.toml` сохранял выбранную модель корректно;
+  - корневая причина — подмешивание `/root/.codex/config.toml` как project config при запуске из `/root`, что перетирало `gena`-настройки.
+- Runtime-проверка подтверждена: после фикса `gena-tui` больше не берет модель из `/root/.codex/config.toml`; выбор модели сохраняется между сессиями.
+- `gena-tui` пересобран (debug) после фиксов (`target/debug/gena-tui`), для сборки на low-memory машине использован `RUSTFLAGS='-C link-arg=-Wl,--no-keep-memory'`.
+- Коммит и push feature-ветки:
+  - `3ccc42605` — `fix(gena-tui): persist model selection and isolate project config namespace`
+- Merge в `codex-rs/main` и push:
+  - `a9f7f9616` — `merge(gena-tui): persist model selection and isolate project config namespace`
+
+## 2026-02-23 — codex-rs linker acceleration on aarch64 Linux (`mold`)
+- Установлен `mold` в окружение (Ubuntu/proot на Termux) для ускорения линковки Rust-бинарей.
+- Проверены варианты linker driver:
+  - `clang + mold` — не работает в этом окружении (`mold: fatal: library not found: gcc_s`);
+  - `gcc + mold` — рабочая связка.
+- В `codex-rs/.cargo/config.toml` добавлена Linux/aarch64 конфигурация:
+  - `linker = "gcc"`
+  - `-fuse-ld=mold`
+  - `-Wl,--no-keep-memory` (сохранен для обхода `ld ... Bus error` на low-memory машине).
+- Выполнены замеры на `cargo build -p codex-tui --bin gena-tui -j1`:
+  - cold build после смены linker/rustflags fingerprint: `42m36.997s`
+  - warm build: `18.020s`
+- Изменение закоммичено и запушено в `codex-rs/main`:
+  - `ca6d10eeb` — `build: use gcc plus mold for aarch64 linux linking`
+
+## 2026-02-23 — codex-rs upstream sync dry-run -> compile-green baseline (`chore/upstream-sync-2026-02-23`)
+- Подтверждена механика апдейта форка `codex-rs` с `upstream/main` на реальном merge, а не только теоретически.
+- Создана sync-ветка `chore/upstream-sync-2026-02-23`; выполнен first-pass merge `upstream/main`:
+  - `0dfd6fd4b` — `merge(upstream): sync upstream/main into fork baseline (first pass)`.
+- Получена и разобрана конфликтная карта (основные кастомные зоны: `core/*`, `tui/*`, `models_manager`, `config_loader`).
+- Выполнен compile-driven second pass до compile-green baseline:
+  - `cargo check -p codex-core -j1` PASS
+  - `cargo check -p codex-tui -j1` PASS
+- В sync-ветке закоммичен пакет пост-merge адаптаций:
+  - `bf4bb136f` — `sync(upstream): restore compile-green codex-core and codex-tui baseline`
+- Отдельно зафиксирован практический вывод: апдейт форка рабочий, но это интеграционная задача (merge + compile-driven адаптация API drift), а не быстрый ff.
+- Push sync-ветки в `origin` не прошел из-за недостаточного GitHub token scope (`workflow`); remote отклоняет изменение `.github/workflows/Dockerfile.bazel`.
+- Push sync-ветки в `codex-rs` был заблокирован GitHub token scope (`workflow`) из-за изменений в `.github/workflows/*`.
+- Обход без смены токена: собран publishable workflow-free commit (через filtered patch без `.github/workflows/*`) и запушен в `origin/chore/upstream-sync-2026-02-23`.
+- Локальные ветки приведены в порядок:
+  - `chore/upstream-sync-2026-02-23` -> canonical branch, tracking remote publishable sync branch;
+  - `chore/upstream-sync-2026-02-23-fullhistory-local` -> сохранен локально полный baseline с workflow-изменениями.
+- Подтвержден последний upstream Rust release tag `codex-rs`: `rust-v0.104.0`.
+- Принят более наглядный internal alias для релизной базы форка: `codex-rust-v0.104.0` (вместо голого `rust-v0.104.0`).
+- В `codex-rs` создана ветка `chore/upstream-sync-codex-rust-v0.104.0` от `main`.
+- Добавлен `UPSTREAM_BASE.md` в корень `codex-rs` (anchor metadata: `upstream_tag_ref`, SHA, date, remote, status=planning).
+
+## 2026-02-24 — codex-rs release-based upstream sync (`codex-rust-v0.104.0`) до compile-green baseline
+- Подтвержден upstream release anchor `rust-v0.104.0`; принят внутренний alias `codex-rust-v0.104.0`.
+- Создана ветка `chore/upstream-sync-codex-rust-v0.104.0` и добавлен `UPSTREAM_BASE.md` с metadata (tag ref, SHA, date, remote).
+- Выполнен real merge `rust-v0.104.0` в release-sync ветку; first-pass конфликтов было всего 3 файла:
+  - `Cargo.toml`
+  - `core/src/models_manager/manager.rs`
+  - `core/tests/suite/model_info_overrides.rs`
+- First-pass conflict resolution закоммичен:
+  - `f69912225` — `merge(upstream): resolve rust-v0.104.0 first-pass conflicts`
+- Compile-driven pass завершен до compile-green baseline:
+  - `cargo check -p codex-core -j1` PASS
+  - `cargo check -p codex-tui -j1` PASS
+- Закоммичен пакет release-sync compile-fixes + статус `UPSTREAM_BASE.md = compile-green`:
+  - `bfd532c8b` — `sync(upstream): make codex-rust-v0.104.0 branch compile-green`
+- Push full branch снова уперся в GitHub token scope (`workflow`) из-за изменений в `.github/workflows/*`.
+- Собран и запушен workflow-free publishable commit (без `.github/workflows/*`) в remote release-sync branch:
+  - `eccd113b6` — `sync(upstream): publish compile-green codex-rust-v0.104.0 without workflow file changes`
+  - `origin/chore/upstream-sync-codex-rust-v0.104.0` обновлена.
+
+## 2026-02-25 — codex-rs llmops wire-api switch + responses compatibility guards (merge to main)
+- В `codex-rs` завершена ветка `feature/llmops-wire-api-switch` и влита в `main`.
+- Что добавлено/исправлено:
+  - config/profile/env switch для built-in `llmops` между `responses` и `chat-completions`;
+  - логирование реального request dispatch (`provider`, `wire_api`, endpoint);
+  - `/model` picker для `llmops` использует remote catalog в обоих режимах (`responses` и `chat-completions`), независимо от снятого upstream feature-flag `RemoteModels`;
+  - для `llmops + responses` добавлены compatibility-guards:
+    - `parallel_tool_calls` можно отключить env-переменной `LLMOPS_PARALLEL_TOOL_CALLS=false`, при этом поле полностью опускается из JSON (`omit key`), а не отправляется как `false`;
+    - `web_search` tool удаляется из toolset перед запросом в `responses`-режиме (generic guard для `llmops`, не только `grok`).
+- Runtime-проверка пользователем подтверждает:
+  - в `chat/completions` `/model` picker снова показывает provider models;
+  - в `responses` ушли ошибки `UnsupportedParamsError: ['parallel_tool_calls']` и `xAI Live search deprecated (410 Gone)`.
+- Сборка `gena-tui` пересобиралась многократно на low-memory машине; отдельно потребовалась ручная очистка stale cargo lock/processes (`pkill cargo/rustc/mold`) из-за подвисших exec-сессий.
+- Коммиты и merge:
+  - `536d7ef65` — `feat(llmops): add wire-api compatibility toggles and responses guards`
+  - `a3d5ca2c7` — `merge(llmops): wire-api switch and responses compatibility guards`
+
+## 2026-03-09 — codex-rs Gena architecture: runtime bootstrap checks consolidated (`chore/update-arch`)
+- Продолжено additive-выделение Gena-owned слоев в `codex-rs` без mass-move upstream crates.
+- В `codex-cli` завершен еще один compile-green thinning step:
+  - вынесены локальные dispatch helper'ы для `Mcp`, `Cloud`, `Sandbox`, `Apply`;
+  - это уменьшило повторяющийся `prepend_config_flags + run` glue в `cli/src/main.rs`.
+- В `gena-runtime` добавлены общие helper'ы для runtime/bootstrap path:
+  - `build_runtime_config(...)`
+  - `build_runtime_config_with_fallback_cwd(...)`
+  - `ensure_runtime_execpolicy_clean(...)`
+  - `apply_runtime_client_residency(...)`
+  - `ensure_runtime_login_restrictions(...)`
+- На эти helper'ы переведены `codex-exec` и `codex-tui`:
+  - direct `ConfigBuilder` usage больше не живет в `codex-exec`;
+  - `codex-exec` и `codex-tui` больше не вызывают напрямую `check_execpolicy_for_warnings(...)`;
+  - `codex-exec` и `codex-tui` больше не держат прямые `set_default_client_residency_requirement(...)` / `enforce_login_restrictions(...)` в основном bootstrap path.
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p codex-cli -j1` PASS
+  - `cargo check -p gena-runtime -p codex-exec -j1` PASS
+  - `cargo check -p gena-runtime -p codex-exec -p codex-tui -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `917daec5b` — `refactor(gena): centralize runtime bootstrap checks`
+
+## 2026-03-09 — codex-rs Gena architecture: OSS bootstrap runtime flow unified (`chore/update-arch`)
+- Продолжено thinning `codex-exec` и `codex-tui` вокруг OSS/bootstrap path без перехода к `plugin-api`.
+- В `gena-runtime` добавлены общие OSS bootstrap helper'ы:
+  - `BootstrapModelProviderPlan`
+  - `plan_interactive_bootstrap_model_provider(...)`
+  - `resolve_headless_bootstrap_model_provider(...)`
+  - `ensure_runtime_oss_provider_ready(...)`
+- На эти helper'ы переведены `codex-exec` и `codex-tui`:
+  - `codex-exec` больше не держит inline policy/error path для `No default OSS provider configured ...`;
+  - `codex-tui` больше не держит локальную policy-развилку между config-driven provider и interactive OSS provider selection;
+  - `codex-exec` и `codex-tui` больше не держат локальный OSS provider readiness flow.
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p codex-exec -p codex-tui -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `d858a5362` — `refactor(gena): unify oss bootstrap runtime flow`
+
+## 2026-03-09 — codex-rs Gena architecture: TUI bootstrap policy moved into runtime (`chore/update-arch`)
+- Продолжено thinning `codex-tui` без переноса UI-логики в `gena-runtime`.
+- В `gena-runtime` добавлены helper'ы для non-UI bootstrap policy:
+  - `RuntimeProviderTokenState`
+  - `prepare_runtime_provider_token(...)`
+  - `persist_runtime_provider_token(...)`
+  - `should_show_runtime_trust_screen(...)`
+- На них переведён `codex-tui`:
+  - `prompt_for_missing_provider_env_key(...)` теперь держит только UI/IO prompt flow;
+  - env / inline token / sidecar / persist policy больше не живут в `tui`;
+  - trust-screen policy больше не живёт локально в `tui`.
+- Для runtime helper'ов добавлена зависимость `tracing` в `gena-runtime`.
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `dffd05cce` — `refactor(gena): move tui bootstrap policy into runtime`
+
+## 2026-03-09 — codex-rs Gena architecture: TUI onboarding policy moved into runtime (`chore/update-arch`)
+- Продолжено thinning `codex-tui` вокруг bootstrap policy, не затрагивая onboarding UI.
+- В `gena-runtime` добавлены:
+  - `should_show_runtime_login_screen(...)`
+  - `should_show_runtime_onboarding(...)`
+- На них переведён `codex-tui`:
+  - onboarding/login decision policy больше не живёт локально в `tui`;
+  - `tui` оставлен только как UI/orchestration shell над runtime decision logic.
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `fc62c0e62` — `refactor(gena): move tui onboarding policy into runtime`
+
+## 2026-03-09 — codex-rs Gena architecture: TUI auth status moved into runtime (`chore/update-arch`)
+- Сделан финальный рациональный micro-step в текущем цикле thinning `codex-tui`.
+- В `gena-runtime` добавлены:
+  - `RuntimeLoginStatus`
+  - `get_runtime_login_status(...)`
+- На них переведён `codex-tui`:
+  - локальный `get_login_status(...)` больше не живёт в `tui`;
+  - `tui` использует runtime helper;
+  - для внутренних onboarding-модулей оставлен совместимый `pub use` alias `LoginStatus`.
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p codex-tui -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `c557d209c` — `refactor(gena): move tui auth status into runtime`
+
+## 2026-03-09 — codex-rs Gena architecture: auth/cloud bootstrap centralized (`chore/update-arch`)
+- После закрытия цикла micro-thinning `codex-tui` выполнен следующий high-ROI boundary step.
+- В `gena-runtime` добавлены:
+  - `build_runtime_auth_manager(...)`
+  - `build_runtime_cloud_requirements(...)`
+- На эти helper'ы переведены:
+  - `gena-runtime::prepare_bootstrap_context(...)`
+  - `codex-exec`
+  - `codex-tui`
+- Это убрало прямые вызовы `AuthManager::shared(...)` и `cloud_requirements_loader(...)` из `exec/tui` bootstrap path.
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p codex-exec -p codex-tui -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `46b10ed5e` — `refactor(gena): centralize auth and cloud bootstrap`
+## 2026-03-13 — codex-rs Plugin Platform Expansion: real `llmops` provider execution (`chore/update-arch`)
+- Открыт следующий execution frontier после real `tool` path.
+- В `gena-plugin-api` provider axis переведён из descriptor-only в execution-aware contract:
+  - добавлен `ProviderExecutionKind`
+  - `ProviderDescriptor` и `RegisteredProvider` теперь хранят `execution_kind`
+- В `gena-runtime` execution stack расширен provider path:
+  - добавлен `RuntimeProviderExecutionPlan`
+  - `RuntimeExecutionTarget` / `RuntimeExecutionPlan` получили `Provider` variant
+  - `RuntimePluginSnapshot` и `RuntimePluginLifecycle` теперь умеют resolve/prepare provider execution
+- В `gena-plugins-core` built-in `LlmOpsProviderPlugin` теперь регистрирует execution kind:
+  - `BuiltinLlmOps`
+- Реальные production bootstrap paths переведены на provider execution gate:
+  - `codex-exec`
+  - `codex-tui`
+- Дополнительно обновлены match arms в `codex-cli` / `tui/chatwidget` под новый `Provider` variant.
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-exec -p codex-tui -p codex-cli -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `f76f1b5ce` — `feat(gena): add llmops provider execution`
+## 2026-03-13 — codex-rs Plugin Platform Expansion: builtin lifecycle callbacks (`chore/update-arch`)
+- Углублён execution/lifecycle frontier после real provider execution checkpoint.
+- В `gena-runtime` добавлены:
+  - `RuntimeLifecycleCallback`
+  - callback-aware `RuntimePreparedExecutionTrace`
+  - built-in callback mapping внутри `prepare_execution_with_lifecycle(...)`
+- Callback layer пока intentionally thin:
+  - без plugin-provided hooks
+  - без dynamic loader
+  - без новых execution axes
+- Текущие built-in execution paths теперь имеют callback trace:
+  - `mcp`
+  - `llmops`
+  - `apply_patch`
+  - `review`
+- Добавлены/обновлены runtime tests на callback trace для:
+  - command
+  - provider
+  - tool
+  - workflow
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `c36098d4e` — `feat(gena): add builtin plugin lifecycle callbacks`
+## 2026-03-13 — codex-rs Plugin Platform Expansion: plugin-provided lifecycle hooks (`chore/update-arch`)
+- Продолжен lifecycle frontier после built-in callback checkpoint.
+- В `gena-plugin-api` добавлен plugin-provided lifecycle contract:
+  - `LifecycleTargetKind`
+  - `LifecycleHookStage`
+  - `LifecycleHookDescriptor`
+  - `RegisteredLifecycleHook`
+  - `LifecyclePlugin`
+- `PluginRegistry` теперь хранит lifecycle hooks как часть discovered/plugin-owned state.
+- В `gena-plugins-core` built-in plugins теперь сами регистрируют lifecycle hooks для своих targets:
+  - `mcp`
+  - `llmops`
+  - `apply_patch`
+  - `review`
+- В `gena-runtime` lifecycle trace переведён с hardcoded callback mapping на registry-backed lookup.
+- Практический результат:
+  - lifecycle callbacks теперь реально plugin-provided
+  - runtime больше не является source of truth для имён callback’ов по built-in plugin targets
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `41707e244` — `feat(gena): add plugin-provided lifecycle hooks`
+## 2026-03-13 — codex-rs Plugin Platform Expansion: dynamic plugin loader (`chore/update-arch`)
+- Открыт и закрыт `dynamic loader` frontier поверх уже собранного plugin platform stack.
+- В `gena-plugin-api` добавлены canonical dynamic loading entrypoints:
+  - `DynamicPluginRegisterFn`
+  - `DYNAMIC_PLUGIN_REGISTER_SYMBOL`
+- В `gena-runtime` добавлен runtime-owned dynamic loading bridge:
+  - `initialize_dynamic_runtime_plugin_registry(...)`
+  - `initialize_discovered_runtime_plugin_registry_with_dynamic_loader(...)`
+  - `RuntimePluginSnapshot::discover_with_dynamic_loader(...)`
+  - `RuntimePluginLifecycle::discover_with_dynamic_loader(...)`
+- Dynamic loader сделан минимальным и opt-in:
+  - runtime читает `GENA_PLUGIN_LIBRARIES`
+  - грузит shared libraries через `libloading`
+  - вызывает canonical exported registrar symbol
+- В `gena-plugins-core` добавлен canonical exported registrar:
+  - `gena_register_plugin`
+  - crate теперь собирается как `rlib + cdylib`
+- Реальные discovery callsite'ы переведены на dynamic-loader-aware path:
+  - `codex mcp`
+  - `codex review`
+  - `codex debug plugins`
+  - `codex-exec`
+  - `codex-tui`
+  - `tui/chatwidget`
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-plugin-api -p gena-runtime -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `80e68a55c` — `feat(gena): add dynamic plugin loader`
+## 2026-03-14 — codex-rs Plugin Platform Expansion: richer registry metadata (`chore/update-arch`)
+- Продолжен `registry/index` frontier после ranked + fuzzy search checkpoint.
+- В remote plugin index contract добавлены richer service-facing metadata fields:
+  - `publisher`
+  - `license`
+  - `repository_url`
+- В `gena-runtime`:
+  - `RuntimePluginRegistryEntry` расширен новыми полями
+  - parser/validator для remote index теперь:
+    - требует non-empty `publisher`
+    - требует non-empty `license`
+    - валидирует `repository_url` только для `http://` / `https://`
+- В `codex-cli`:
+  - `debug inspect-plugin-index` теперь печатает richer entry output
+  - `debug search-plugin-index` теперь печатает richer ranked result output
+- Практический результат:
+  - registry story теперь включает не только id/version/distribution routing, но и publisher/repository/license contract
+  - это первый более явный service-facing metadata layer поверх уже собранных:
+    - inspect
+    - ranked + fuzzy search
+    - registry-backed install / replace / uninstall
+- Проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- Изменение закоммичено и запушено в `codex-rs/chore/update-arch`:
+  - `54fb940fb` — `feat(gena): enrich plugin registry metadata`
+- На `codex-rs/chore/update-arch` зафиксирован extended registry service contract checkpoint:
+  - `986cdb28f` — `feat(gena): extend plugin registry contract`
+- В remote registry/index contract добавлены explicit discovery/service fields:
+  - `summary`
+  - `capabilities`
+  - `tags`
+- В `gena-runtime`:
+  - `RuntimePluginRegistryEntry` расширен:
+    - `summary`
+    - `capabilities`
+    - `tags`
+  - parser/validator теперь:
+    - требует non-empty `summary`
+    - требует non-empty `capabilities`
+    - валидирует `capabilities` / `tags` как arrays of non-empty strings
+- Search/ranking layer теперь учитывает:
+  - exact/prefix/substring match по `capabilities`
+  - exact/prefix/substring match по `tags`
+  - substring + fuzzy fallback по `summary`
+- В `codex-cli` richer output для:
+  - `debug inspect-plugin-index`
+  - `debug search-plugin-index`
+  теперь включает:
+  - `summary`
+  - `capabilities`
+  - `tags`
+- Практический эффект:
+  - current TOML index contract стал ближе к real discovery/service layer, а не только package metadata + routing
+  - search UX теперь ищет не только по identity, но и по package semantics/capabilities
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован plugin index manifest checkpoint:
+  - `a9920d32a` — `feat(gena): add plugin index manifest`
+- В current TOML registry/index contract добавлен top-level `[index]` manifest:
+  - `format_version`
+  - `registry_id`
+  - `display_name`
+- В `gena-runtime`:
+  - добавлен `RuntimePluginRegistryManifest`
+  - добавлен `inspect_runtime_plugin_registry_manifest_url(...)`
+  - parser теперь требует `[index]` и валидирует:
+    - supported `format_version = "1"`
+- Existing package-facing API не сломан:
+  - inspect/search/install/replace/uninstall loop продолжает работать поверх new parser
+- В `codex-cli`:
+  - `debug inspect-plugin-index` теперь печатает top-level header:
+    - `plugin-index-manifest`
+    - `format_version`
+    - `registry_id`
+    - `display_name`
+- Практический эффект:
+  - registry story теперь имеет не только richer package entries, но и first explicit protocol boundary for the index itself
+  - это уже шаг beyond current implicit TOML shape, без backend rewrite и без новой network semantics
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован index service capabilities checkpoint:
+  - `acfb22acf` — `feat(gena): add index service capabilities`
+- Top-level `[index]` manifest расширен service-aware полем:
+  - `capabilities = ["..."]`
+- В `gena-runtime`:
+  - `RuntimePluginRegistryManifest` теперь хранит `capabilities`
+  - parser/validator требует non-empty `[index].capabilities`
+  - валидирует их как array of non-empty strings
+- В `codex-cli`:
+  - `debug inspect-plugin-index` теперь печатает capabilities в `plugin-index-manifest` header
+- Практический эффект:
+  - registry contract теперь описывает не только identity/version/source, но и supported registry actions/capabilities
+  - это ещё один service-aware шаг beyond static package-only TOML shape без backend rewrite
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован registry service endpoints checkpoint:
+  - `353608950` — `feat(gena): add registry service endpoints`
+- Top-level registry contract теперь имеет optional endpoint-level service section:
+  - `[service]`
+    - `search_url`
+    - `package_url_template`
+- В `gena-runtime`:
+  - добавлен `RuntimePluginRegistryService`
+  - `RuntimePluginRegistryManifest` теперь хранит `service`
+  - parser валидирует:
+    - `search_url` только для `http://` / `https://`
+    - `package_url_template` только для `http://` / `https://`
+    - `package_url_template` обязан содержать `{package_id}`
+- В `codex-cli`:
+  - `debug inspect-plugin-index` теперь печатает service endpoints в manifest header
+- Практический эффект:
+  - registry contract вышел за рамки static manifest+capabilities и получил first endpoint-level service surface
+  - при этом текущие install/search/manage flows не переписаны на новый service layer и backward-compatible runtime shape сохранён
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован first service-backed registry path checkpoint:
+  - `5a0668f25` — `feat(gena): add service-backed registry search`
+- В `gena-runtime`:
+  - `search_runtime_plugin_registry_index(...)` теперь:
+    - использует `[service].search_url?q=...`, если endpoint объявлен
+    - сохраняет fallback на current static index search, если endpoint не объявлен
+  - добавлен `RuntimePluginSearchSource`:
+    - `Index`
+    - `Service`
+- Search service contract пока intentionally thin:
+  - service response использует тот же TOML index shape
+  - нет auth
+  - нет pagination
+  - нет mandatory service switch
+- В `codex-cli`:
+  - `debug search-plugin-index` теперь печатает search source:
+    - `index`
+    - `service`
+- Практический эффект:
+  - появился первый реальный service-backed registry path
+  - при этом текущий static index/search flow остаётся source of fallback, так что переход сделан без ломки уже собранного UX
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован service-backed package resolution checkpoint:
+  - `ebdacc752` — `feat(gena): add service-backed package resolution`
+- В `gena-runtime`:
+  - добавлен общий resolver:
+    - `resolve_runtime_plugin_from_registry_index(...)`
+  - если `[service].package_url_template` объявлен:
+    - runtime строит package URL через `{package_id}`
+    - скачивает `[package]` TOML document
+    - валидирует, что resolved `package_id` совпадает с requested
+  - если endpoint не объявлен:
+    - сохраняется fallback на current static index lookup
+  - добавлены:
+    - `RuntimeResolvedPluginPackage`
+    - `RuntimePluginPackageResolutionSource`
+      - `Index`
+      - `Service`
+- `install/replace/uninstall_runtime_plugin_from_registry_index(...)` теперь используют общий resolver вместо local static lookup duplication.
+- В `codex-cli`:
+  - `debug install-plugin-from-index`
+  - `debug replace-plugin-from-index`
+  - `debug uninstall-plugin-from-index`
+  теперь печатают resolution source:
+  - `index`
+  - `service`
+- Практический эффект:
+  - registry contract теперь имеет уже два реальных service-backed paths:
+    - search
+    - package resolution
+  - static TOML index остаётся fallback, поэтому переход остаётся incremental и безопасным
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован package detail inspection checkpoint:
+  - `115ff1e57` — `feat(gena): add package detail inspection`
+- В `gena-runtime` добавлен thin helper:
+  - `inspect_runtime_plugin_from_registry_index(...)`
+- Helper reuse’ит уже существующий service-backed/static-fallback resolver и даёт operator-facing package detail path без новых network semantics.
+- В `codex-cli` добавлен новый debug path:
+  - `debug inspect-plugin-from-index <INDEX_URL> <PACKAGE_ID>`
+- Output теперь печатает:
+  - resolution source:
+    - `index`
+    - `service`
+  - full package detail:
+    - `package_id`
+    - `display_name`
+    - `package_version`
+    - `summary`
+    - `publisher`
+    - `license`
+    - `capabilities`
+    - `tags`
+    - `repository_url`
+    - `distribution_url`
+- Практический эффект:
+  - service-backed registry story теперь имеет:
+    - search
+    - package resolution
+    - package detail inspection
+  - operator может проверить exact resolved package before install/update/remove without opening new backend scope
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован registry service auth checkpoint:
+  - `fa260a179` — `feat(gena): add registry service auth`
+- Top-level optional `[service]` contract расширен полем:
+  - `auth_env`
+- В `gena-runtime`:
+  - service-backed search и service-backed package resolution теперь умеют:
+    - читать bearer token из env var, указанной в `auth_env`
+    - отправлять `Authorization: Bearer ...` на service endpoints
+  - static index fallback paths не затронуты
+- В `codex-cli`:
+  - `debug inspect-plugin-index` теперь печатает `auth_env` в manifest header
+- Практический эффект:
+  - service-backed registry stack теперь покрывает не только endpoints, search и package resolution, но и первый auth-aware path
+  - при этом auth остаётся opt-in и не делает service mode обязательным
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован registry search paging checkpoint:
+  - `5f62b31b1` — `feat(gena): add registry search paging`
+- Optional `[service]` contract расширен paging fields:
+  - `page_param`
+  - `page_size_param`
+- В `gena-runtime`:
+  - добавлен совместимый helper:
+    - `search_runtime_plugin_registry_index_with_paging(...)`
+  - old `search_runtime_plugin_registry_index(...)` остаётся thin wrapper
+  - service-backed search теперь умеет добавлять:
+    - page query param
+    - page_size query param
+    если service metadata их объявляет
+- В `codex-cli`:
+  - `debug search-plugin-index` теперь поддерживает:
+    - `--page`
+    - `--page-size`
+  - `debug inspect-plugin-index` теперь печатает:
+    - `page_param`
+    - `page_size_param`
+- Практический эффект:
+  - auth/paging frontier теперь открыт не только на metadata уровне, но и на реальном service-backed search path
+  - static fallback search при этом остаётся прежним
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `codex-rs/chore/update-arch` зафиксирован paged search response checkpoint:
+  - `18c00538f` — `feat(gena): add paged search responses`
+- Paged response frontier теперь покрыт и на response side:
+  - optional `[response]`
+    - `page`
+    - `page_size`
+    - `total`
+    - `next_page`
+- В `gena-runtime`:
+  - добавлены:
+    - `RuntimePluginRegistryResponse`
+    - `RuntimePluginSearchPage`
+  - `search_runtime_plugin_registry_index_with_paging(...)` теперь возвращает:
+    - `results`
+    - optional `response`
+  - старый `search_runtime_plugin_registry_index(...)` сохранён как совместимый wrapper
+- В `codex-cli`:
+  - `debug search-plugin-index` теперь печатает optional:
+    - `plugin-search-page`
+    - `page`
+    - `page_size`
+    - `total`
+    - `next_page`
+  - only when response metadata is present
+- Практический эффект:
+  - paging frontier теперь не только request-side, но и response-aware
+  - search path готов к следующему шагу в cursor/next-page direction without breaking current UX
+- Подтверждены проверки:
+  - `cargo fmt --all` PASS
+  - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
