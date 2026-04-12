@@ -11,9 +11,9 @@
 - [[PROCESS]] — стандарт работы
 
 ## Ссылки на Project Code
-- Termux (Android): `/root/pr-infra-tools-aqa/gena-rs`
+- Termux (Android): `/root/pr-infra-tools-aqa/gena-rs/gena-rs-project`
 - Ubuntu (Zed): `__PATH_TODO__`
 
 ## Ссылки на Project Obsidian
-- Termux (Android): `/root/pr-obsidian/pr-infra-tools-aqa-obsidian/gena-rs-obsidian`
+- Termux (Android): `/root/pr-infra-tools-aqa/gena-rs/gena-rs-obsidian`
 - Ubuntu (Zed): `__PATH_TODO__`
