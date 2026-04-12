@@ -28,6 +28,23 @@
 - Отдельно подтверждено:
   - merge всё ещё требует oauth-safe push схемы с отдельным drop `.github/workflows/*` commit
   - локально отсутствует `just`, поэтому перед финальным closeout надо вернуть обязательный `just fmt`
+- Следующим инкрементом в `codex-cli` уже сделано:
+  - `codex-rs/cli/Cargo.toml`
+    - добавлены `gena-branding`
+    - добавлены `gena-plugins-core`
+    - добавлены `gena-runtime`
+    - добавлены `gena-types`
+  - `codex-rs/cli/src/main.rs`
+    - возвращены debug plugin subcommands и command structs из рабочей gena-версии
+    - восстановлен `build_multitool_command()`
+    - удалены дубликаты `finalize_resume_interactive` / `finalize_fork_interactive`
+    - поправлен `cloud` dispatch
+    - поправлены sandbox callsites под текущие сигнатуры
+  - `codex-rs/cli/src/mcp_cmd.rs`
+    - возвращён `load_mcp_runtime_config(...)`
+    - возвращены runtime MCP helpers и `find_product_home(...)`
+    - удалён дублирующийся merge-stub `run_add(...)`
+- Новый `cargo check -p codex-cli` после этих правок был перезапущен, но финальный результат ещё не зафиксирован: прогон был прерван пользователем до конца.
 
 ## 2026-03-19
 - В `gena-rs` завершён реальный merge:
