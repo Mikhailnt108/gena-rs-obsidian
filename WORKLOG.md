@@ -1,5 +1,34 @@
 # WORKLOG
 
+## 2026-04-12
+- Продолжен реальный upstream update в `gena-rs-project` на ветке `update-upstream`.
+- В рабочее дерево наложен `openai/codex` `rust-v0.120.0`, но merge commit пока не создан.
+- Реально добиты merge/API drift швы в:
+  - `codex-rs/codex-api`
+  - `codex-rs/model-provider-info`
+  - `codex-rs/config`
+  - `codex-rs/core`
+  - `codex-rs/app-server`
+  - `codex-rs/gena-upstream-adapter`
+  - `codex-rs/gena-runtime`
+  - `codex-rs/tui`
+  - `codex-rs/exec`
+- В `codex-rs/exec` дополнительно:
+  - возвращены `gena-runtime` / `gena-upstream-adapter` / `gena-plugins-core` зависимости
+  - починен runtime bootstrap/otel шов
+  - `cargo check` прошёл дальше за `codex-exec`
+- Текущий compile frontier уже сместился в `codex-rs/cli`:
+  - `cli/src/login.rs` переведён на runtime login helper'ы из `gena_runtime`
+  - текущий blocker не в API, а в manifest-слое:
+    - `codex-rs/cli/Cargo.toml` ещё не содержит нужные `gena-*` зависимости
+- Проверки по ходу работы:
+  - `cargo fmt --all` PASS
+  - `cargo check -p codex-cli` FAIL
+    - current blocker: unresolved `gena_runtime` imports in `codex-cli` because crate deps are not yet added in `codex-rs/cli/Cargo.toml`
+- Отдельно подтверждено:
+  - merge всё ещё требует oauth-safe push схемы с отдельным drop `.github/workflows/*` commit
+  - локально отсутствует `just`, поэтому перед финальным closeout надо вернуть обязательный `just fmt`
+
 ## 2026-03-19
 - В `gena-rs` завершён реальный merge:
   - `upstream/main -> chore/update-upstream-on-gena-arch`
