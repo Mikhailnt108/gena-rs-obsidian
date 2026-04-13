@@ -45,6 +45,27 @@
     - возвращены runtime MCP helpers и `find_product_home(...)`
     - удалён дублирующийся merge-stub `run_add(...)`
 - Новый `cargo check -p codex-cli` после этих правок был перезапущен, но финальный результат ещё не зафиксирован: прогон был прерван пользователем до конца.
+- Следующим прогоном подтверждено:
+  - `codex-rs/cli/Cargo.toml`
+    - добавлена `gena-upstream-adapter`
+  - `cargo check -p codex-cli` PASS
+  - `cargo test -p codex-cli` PASS
+- `cargo test -p codex-cli` прошёл:
+  - unit tests для `codex_cli`
+  - unit tests для `codex` / `aqa-codex` / `gena`
+  - integration tests:
+    - `debug_clear_memories`
+    - `execpolicy`
+    - `features`
+    - `mcp_add_remove`
+    - `mcp_list`
+- Для соблюдения repo-process дополнительно установлен `just`:
+  - `cargo install just` PASS
+- Текущий remaining scope после этого checkpoint уже не compile/test, а closeout merge:
+  - прогнать `just fmt`
+  - сделать merge commit
+  - сделать oauth-safe follow-up commit с drop `.github/workflows/*`
+  - push ветки `update-upstream`
 
 ## 2026-03-19
 - В `gena-rs` завершён реальный merge:
