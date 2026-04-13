@@ -163,6 +163,37 @@
 - Подтверждены проверки:
   - `cargo fmt --all` PASS
   - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+- На `gena-rs-project/update-upstream` зафиксирован cleanup checkpoint после зелёного `codex-cli`:
+  - `cargo check -p codex-cli` PASS
+  - `cargo test -p codex-cli` PASS
+  - `just fmt` PASS
+  - `just fix` запущен как обязательный pre-closeout шаг для большого `codex-rs` merge
+- `just fix` уже внёс реальные auto-fix правки в:
+  - `codex-core`
+  - `gena-runtime`
+  - `codex-tui`
+  - `codex-exec`
+  - `codex-cli`
+- Первый test-only drift, снятый по ходу `just fix`:
+  - `core/tests/common/test_codex.rs`
+    - `ThreadManager::new(...)` переведён на новую сигнатуру
+    - добавлен `config.model_provider.clone()`
+- Следующий test-only drift, снятый по ходу `just fix`:
+  - `core/src/client_common_tests.rs`
+    - `parallel_tool_calls` переведён с `true` на `Some(true)`
+  - `core/src/thread_manager_tests.rs`
+    - все упавшие `ThreadManager::new(...)` callsite’ы переведены на новую сигнатуру с `config.model_provider.clone()`
+- Ещё один test-only drift, снятый по ходу `just fix`:
+  - `exec/src/lib_tests.rs`
+    - добавлен missing import `codex_core::config::ConfigBuilder`
+- Текущее состояние:
+  - merge на `rust-v0.120.0` остаётся незакоммиченным
+  - `just fix` ещё не доведён до финального чистого статуса
+- Остаточный scope перед closeout:
+  - добить `just fix`
+  - merge commit
+  - follow-up commit с drop `.github/workflows/*`
+  - push ветки
 
 ## 2026-03-19
 - На `codex-rs/chore/update-arch` зафиксирован runtime capability-axis split:
