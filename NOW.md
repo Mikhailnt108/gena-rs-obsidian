@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Зафиксировать `llmops` model-refresh fix в `main` и держать актуальные `gena-v0.120.0-macos-arm64` артефакты готовыми к установке и проверке.
+Зафиксировать текущее post-fix состояние `gena-v0.120.0`: `llmops` refresh fix уже в `main`, но выявлен новый onboarding bug для первого запуска без `~/.gena-codex`.
 
 ## State
 - В `gena-rs-project` активна ветка `main`.
@@ -19,11 +19,28 @@
   - `gena-v0.120.0-macos-arm64.tar.gz` обновлён в `2026-04-13 23:21`
   - `gena-v0.120.0-macos-arm64.tar.gz.sha256` обновлён в `2026-04-13 23:21`
   - `gena-v0.120.0-macos-arm64-installer.sh` пересоздан в `2026-04-13 23:25`
-- Старый локальный Obsidian state про просто “post-merge артефакты” уже недостаточен: теперь есть конкретный fix для отсутствующих `llmops` моделей в установленном `v0.120.0`.
+- Новый installer локально установлен в `/opt/homebrew/bin`:
+  - `gena 0.120.0`
+  - `codex-tui 0.120.0`
+- При запуске установленного `gena` в header подтверждается:
+  - `provider: llmops`
+- Но найден новый runtime/onboarding bug:
+  - если удалить `~/.gena-codex` и запустить `gena` впервые без `LLMOPS_TOKEN` в env,
+    приложение не предлагает ввести токен
+  - вместо этого TUI завершает старт сообщением:
+    - `Provider \`llmops\` requires \`LLMOPS_TOKEN\`. Set it in the environment or persist a token before starting the TUI.`
+- По коду причина локализована:
+  - `gena-runtime::prepare_runtime_provider_token(...)` возвращает `NeedsPrompt`
+  - `tui/src/lib.rs` не открывает prompt, а превращает этот кейс в fatal error
+- Дополнительно: прямая smoke-check в model picker ещё не подтверждена.
+  - `provider: llmops` уже виден
+  - но `~/.gena-codex/models_cache.json` в текущей проверке не обновился и остался с `client_version = 0.107.0`
 
 ## Blockers
-- Нужна реальная smoke-check проверка установленного нового installer'а, чтобы подтвердить, что `llmops` модели снова видны в UI.
-- Нужно держать кодовый push и Obsidian sync в одном актуальном состоянии.
+- Главный blocker сместился:
+  - first-run onboarding для `llmops` сломан, если нет `LLMOPS_TOKEN` и нет sidecar token file
+- Пока этот bug не починен, новый пользовательский сценарий после удаления `~/.gena-codex` ломается ещё до нормального входа в TUI.
+- Отдельно остаётся неподтверждённым прямой UI smoke-check появления `llmops` моделей в picker.
 
 ## Next Step
-- Переустановить `gena-v0.120.0-macos-arm64-installer.sh` и проверить, что `llmops` модели появились в model picker.
+- Починить onboarding flow для `llmops`: на `RuntimeProviderTokenState::NeedsPrompt` TUI должен спрашивать токен и сохранять его, а не падать с ошибкой.

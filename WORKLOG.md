@@ -1,6 +1,31 @@
 # WORKLOG
 
 ## 2026-04-13
+- Выполнена локальная проверка пересобранного installer'а `gena-v0.120.0-macos-arm64-installer.sh`.
+- Installer переустановлен в `/opt/homebrew/bin`.
+- Подтверждены версии установленной локальной установки:
+  - `gena 0.120.0`
+  - `codex-tui 0.120.0`
+- При запуске установленного `gena` подтверждено:
+  - header показывает `provider: llmops`
+- Выявлен новый onboarding/runtime bug для первого запуска без локального state:
+  - если `~/.gena-codex` удалён
+  - и `LLMOPS_TOKEN` отсутствует в environment
+  - `gena` не спрашивает токен у пользователя
+  - вместо этого старт TUI обрывается сообщением:
+    - `Provider \`llmops\` requires \`LLMOPS_TOKEN\`. Set it in the environment or persist a token before starting the TUI.`
+- Причина локализована по коду:
+  - `codex-rs/gena-runtime/src/bootstrap_onboarding.rs`
+    - `prepare_runtime_provider_token(...)` корректно возвращает `RuntimeProviderTokenState::NeedsPrompt`
+  - `codex-rs/tui/src/lib.rs`
+    - `prompt_for_missing_provider_env_key(...)` превращает `NeedsPrompt` в `InvalidInput` error вместо интерактивного prompt flow
+- Важное уточнение к smoke-check:
+  - новый installer и provider selection подтверждены
+  - но прямое подтверждение появления `llmops` моделей в picker пока не получено
+  - в текущем локальном состоянии `~/.gena-codex/models_cache.json` не обновился и остаётся с:
+    - `client_version = 0.107.0`
+
+## 2026-04-13
 - Исследован регресс в установленном `gena-v0.120.0-macos-arm64-installer.sh`: после установки в UI не отображались модели из `llmops`.
 - Подтверждено по коду и локальному состоянию:
   - `gena` по умолчанию выбирает `llmops` как provider для brand `Gena`
