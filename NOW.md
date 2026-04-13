@@ -1,28 +1,29 @@
 # NOW
 
 ## Current Goal
-Зафиксировать post-merge состояние после `rust-v0.120.0` и держать `main` как актуальную рабочую базу с готовыми macOS arm64 артефактами.
+Зафиксировать `llmops` model-refresh fix в `main` и держать актуальные `gena-v0.120.0-macos-arm64` артефакты готовыми к установке и проверке.
 
 ## State
 - В `gena-rs-project` активна ветка `main`.
-- Временная ветка `fix/macos-m1-build-remarks` удалена локально после сверки: она полностью совпадала с `main`.
 - Рабочее дерево репозитория кода чистое (`git status` без изменений).
-- Последние ключевые коммиты в кодовом репозитории:
-  - `fc0646ec8` `Restore gena-tui binary target`
-  - `5f2aac782` `sync(upstream): drop workflow changes for oauth push`
-  - `f278d1c8b` `Merge openai/codex rust-v0.120.0 into update-upstream`
-- В `codex-rs/dist` уже лежат готовые macOS arm64 артефакты для:
-  - `gena-v0.107.0`
-  - `gena-v0.120.0`
-- Для `gena-v0.120.0-macos-arm64` присутствуют:
-  - unpacked bundle
-  - `-installer.sh`
-  - `.tar.gz`
-  - `.tar.gz.sha256`
+- В `main` зафиксирован commit:
+  - `c714af8a5` `fix(gena): refresh llmops models with env auth`
+- Смысл фикса:
+  - `gena`/`llmops` теперь может online-refresh'ить `/models`, когда токен приходит через `env_key` (`LLMOPS_TOKEN`)
+  - regression test добавлен в `codex-rs/models-manager`
+- Локально подтверждено:
+  - `just fmt` PASS
+  - `cargo test -p codex-models-manager` PASS
+- Пересобраны macOS arm64 артефакты `gena-v0.120.0`:
+  - unpacked bundle обновлён в `2026-04-13 23:21`
+  - `gena-v0.120.0-macos-arm64.tar.gz` обновлён в `2026-04-13 23:21`
+  - `gena-v0.120.0-macos-arm64.tar.gz.sha256` обновлён в `2026-04-13 23:21`
+  - `gena-v0.120.0-macos-arm64-installer.sh` пересоздан в `2026-04-13 23:25`
+- Старый локальный Obsidian state про просто “post-merge артефакты” уже недостаточен: теперь есть конкретный fix для отсутствующих `llmops` моделей в установленном `v0.120.0`.
 
 ## Blockers
-- В Obsidian до этой сессии было устаревшее состояние про незавершённый merge на `update-upstream`.
-- Не зафиксирован отдельный следующий operational шаг после завершения merge и появления `v0.120.0` артефактов.
+- Нужна реальная smoke-check проверка установленного нового installer'а, чтобы подтвердить, что `llmops` модели снова видны в UI.
+- Нужно держать кодовый push и Obsidian sync в одном актуальном состоянии.
 
 ## Next Step
-- Проверить, нужно ли публиковать или дополнительно валидировать `codex-rs/dist/gena-v0.120.0-macos-arm64*` как следующий релизный инкремент.
+- Переустановить `gena-v0.120.0-macos-arm64-installer.sh` и проверить, что `llmops` модели появились в model picker.

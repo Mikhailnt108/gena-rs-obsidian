@@ -1,6 +1,39 @@
 # WORKLOG
 
 ## 2026-04-13
+- Исследован регресс в установленном `gena-v0.120.0-macos-arm64-installer.sh`: после установки в UI не отображались модели из `llmops`.
+- Подтверждено по коду и локальному состоянию:
+  - `gena` по умолчанию выбирает `llmops` как provider для brand `Gena`
+  - built-in `llmops` provider использует `LLMOPS_TOKEN`
+  - старый `~/.gena-codex/models_cache.json` содержал `llmops` модели, но был записан `client_version = "0.107.0"`
+  - `0.120.0` отбрасывал этот кэш по version mismatch и одновременно не делал online `/models` refresh для provider'ов с auth через `env_key`
+- Реализован fix в `gena-rs-project`:
+  - `codex-rs/models-manager/src/manager.rs`
+    - refresh remote models теперь разрешён и для provider'ов, у которых токен доступен через `env_key` / bearer token
+  - `codex-rs/models-manager/src/manager_tests.rs`
+    - добавлен regression test на env-backed provider token path
+- В тот же commit включены текущие cosmetic/rustfmt-style правки в уже затронутых файлах:
+  - `codex-rs/core/src/client.rs`
+  - `codex-rs/core/src/config/mod.rs`
+  - `codex-rs/gena-config/src/lib.rs`
+  - `codex-rs/gena-runtime/src/capabilities.rs`
+  - `codex-rs/gena-runtime/src/lib.rs`
+  - `codex-rs/tui/src/onboarding/auth/headless_chatgpt_login.rs`
+- Локальные проверки:
+  - `just fmt` PASS
+  - `cargo test -p codex-models-manager` PASS
+- Создан кодовый commit:
+  - `c714af8a5` — `fix(gena): refresh llmops models with env auth`
+- Пересобраны macOS arm64 release артефакты:
+  - `codex-rs/dist/gena-v0.120.0-macos-arm64/`
+  - `codex-rs/dist/gena-v0.120.0-macos-arm64.tar.gz`
+  - `codex-rs/dist/gena-v0.120.0-macos-arm64.tar.gz.sha256`
+  - `codex-rs/dist/gena-v0.120.0-macos-arm64-installer.sh`
+- Финальные mtimes пересобранных артефактов:
+  - bundle / tar.gz / sha256: `2026-04-13 23:21`
+  - installer: `2026-04-13 23:25`
+
+## 2026-04-13
 - Сверено post-merge состояние `gena-rs-project` после интеграции `openai/codex` `rust-v0.120.0`.
 - Подтверждено, что локальная ветка `fix/macos-m1-build-remarks` полностью совпадала с `main`.
 - Репозиторий кода переключён на `main`.
