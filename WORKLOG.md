@@ -1,5 +1,26 @@
 # WORKLOG
 
+## 2026-04-13
+- Сверено post-merge состояние `gena-rs-project` после интеграции `openai/codex` `rust-v0.120.0`.
+- Подтверждено, что локальная ветка `fix/macos-m1-build-remarks` полностью совпадала с `main`.
+- Репозиторий кода переключён на `main`.
+- Локальная ветка `fix/macos-m1-build-remarks` удалена.
+- Подтверждено текущее состояние кодового репозитория:
+  - `git status` CLEAN
+  - последние ключевые коммиты:
+    - `fc0646ec8` `Restore gena-tui binary target`
+    - `5f2aac782` `sync(upstream): drop workflow changes for oauth push`
+    - `f278d1c8b` `Merge openai/codex rust-v0.120.0 into update-upstream`
+- Подтверждено наличие собранных macOS arm64 артефактов в `codex-rs/dist`:
+  - `gena-v0.107.0-macos-arm64*`
+  - `gena-v0.120.0-macos-arm64*`
+- Для `gena-v0.120.0-macos-arm64` зафиксировано наличие:
+  - директории bundle
+  - installer script
+  - tar.gz архива
+  - sha256 файла
+- `NOW.md` синхронизирован с фактическим post-merge состоянием и переведён с устаревшего `update-upstream` контекста на текущий `main`.
+
 ## 2026-04-12
 - Продолжен реальный upstream update в `gena-rs-project` на ветке `update-upstream`.
 - В рабочее дерево наложен `openai/codex` `rust-v0.120.0`, но merge commit пока не создан.
