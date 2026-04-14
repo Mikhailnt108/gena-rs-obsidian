@@ -29,16 +29,17 @@
   - появляется интерактивный prompt для `LLMOPS_TOKEN`
   - после ввода токена создаётся `provider_tokens/LLMOPS_TOKEN`
   - старт продолжается дальше до TUI, а затем создаётся `models_cache.json` с `client_version = 0.120.0`
-- Пересобраны macOS arm64 артефакты `gena-v0.120.0`:
-  - unpacked bundle обновлён в `2026-04-13 23:21`
-  - `gena-v0.120.0-macos-arm64.tar.gz` обновлён в `2026-04-13 23:21`
-  - `gena-v0.120.0-macos-arm64.tar.gz.sha256` обновлён в `2026-04-13 23:21`
-  - `gena-v0.120.0-macos-arm64-installer.sh` пересоздан в `2026-04-13 23:25`
-- Новый installer локально установлен в `/opt/homebrew/bin`:
+- Дополнительно найден packaging drift:
+  - старый `gena-v0.120.0-macos-arm64-installer.sh` из `Downloads` был собран до onboarding fix и переустанавливал pre-fix binary
+- Актуальные macOS arm64 артефакты `gena-v0.120.0` пересобраны уже после onboarding fix:
+  - `gena-v0.120.0-macos-arm64.tar.gz` обновлён в `2026-04-14 13:45:36`
+  - `gena-v0.120.0-macos-arm64.tar.gz.sha256` обновлён в `2026-04-14 13:45:36`
+  - `gena-v0.120.0-macos-arm64-installer.sh` пересоздан в `2026-04-14 13:45:43`
+- Новый installer и новые release binaries локально установлены в `/opt/homebrew/bin`:
   - `gena 0.120.0`
   - `codex-tui 0.120.0`
-- При запуске установленного `gena` в header подтверждается:
-  - `provider: llmops`
+- При запуске установленного `/opt/homebrew/bin/gena` на чистом `CODEX_HOME` без `LLMOPS_TOKEN` теперь подтверждается:
+  - появляется prompt `Enter token for \`LLMOPS_TOKEN\``
 - Исходный bug про startup disappearance `llmops`-моделей закрыт.
 - First-run onboarding bug без `LLMOPS_TOKEN` тоже закрыт.
 - Отдельный UI smoke-check через model picker всё ещё не закрыт.

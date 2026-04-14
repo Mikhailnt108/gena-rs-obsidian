@@ -1,6 +1,22 @@
 # WORKLOG
 
 ## 2026-04-14
+- Локализован источник ложного повторного регресса:
+  - пользователь переустановил `gena` старым `gena-v0.120.0-macos-arm64-installer.sh` из `Downloads`
+  - этот installer был собран ещё до onboarding fix и поверх нового бинаря возвращал старое поведение
+- После этого пересобраны актуальные distribution artifacts в `codex-rs/dist`:
+  - `gena-v0.120.0-macos-arm64.tar.gz`
+  - `gena-v0.120.0-macos-arm64.tar.gz.sha256`
+  - `gena-v0.120.0-macos-arm64-installer.sh`
+- Финальные mtimes post-fix артефактов:
+  - tar.gz / sha256: `2026-04-14 13:45:36`
+  - installer: `2026-04-14 13:45:43`
+- Установленные бинарники в `/opt/homebrew/bin` перезаписаны заново из актуального release build.
+- Финальная проверка уже на установленном `/opt/homebrew/bin/gena` подтвердила:
+  - на чистом `CODEX_HOME` без `LLMOPS_TOKEN` появляется новый prompt `Enter token for \`LLMOPS_TOKEN\``
+  - то есть установленный бинарь теперь совпадает с post-fix состоянием, а проблема была именно в устаревшем installer artifact
+
+## 2026-04-14
 - Закрыт второй bug в `gena + llmops`, связанный с первым запуском без заранее заданного `LLMOPS_TOKEN`.
 - Исправление внесено в:
   - `codex-rs/tui/src/lib.rs`
