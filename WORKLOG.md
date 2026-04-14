@@ -1,5 +1,32 @@
 # WORKLOG
 
+## 2026-04-14
+- Закрыт второй bug в `gena + llmops`, связанный с первым запуском без заранее заданного `LLMOPS_TOKEN`.
+- Исправление внесено в:
+  - `codex-rs/tui/src/lib.rs`
+  - при `RuntimeProviderTokenState::NeedsPrompt` TUI теперь:
+    - выводит интерактивный prompt
+    - скрыто читает токен
+    - сохраняет его в `CODEX_HOME/provider_tokens/<ENV_KEY>`
+    - продолжает startup вместо fatal error
+- Добавлены точечные unit tests в `codex-tui` на:
+  - сохранение prompted token в sidecar
+  - rejection пустого token
+- Локальные проверки:
+  - `just fmt` PASS
+  - `RUSTC_WRAPPER= cargo test -p codex-tui store_prompted_provider_token --lib` PASS
+- Release onboarding smoke на `target/release/gena` без `LLMOPS_TOKEN` в env подтвердил:
+  - появляется prompt `Enter token for \`LLMOPS_TOKEN\``
+  - после ввода создаётся `provider_tokens/LLMOPS_TOKEN`
+  - startup идёт дальше до TUI
+  - затем создаётся `models_cache.json` с `client_version = 0.120.0` и remote-моделью `env-provider-model`
+- Создан кодовый commit:
+  - `d5f73631d` — `fix(gena): prompt for llmops token on first run`
+- Практический итог:
+  - startup disappearance fix закрыт
+  - first-run onboarding fix закрыт
+  - remaining open scope теперь только прямой UI smoke в model picker
+
 ## 2026-04-13
 - Подтверждено, что исходный баг с исчезновением `llmops`-моделей на старте `gena` закрыт не только unit-level тестом, но и startup/runtime проверкой.
 - Исправлен тест в:

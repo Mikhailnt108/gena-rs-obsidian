@@ -1,5 +1,31 @@
 # DL
 
+## 2026-04-14 — `gena + llmops` нельзя считать закрытым без отдельной first-run onboarding проверки на release binary
+**Решение:**
+- Считать post-fix состояние `gena + llmops` завершённым только если подтверждены оба пользовательских сценария:
+  - startup refresh / models cache
+  - first-run onboarding без заранее заданного `LLMOPS_TOKEN`
+- Для второго сценария обязательна именно release-проверка:
+  - fresh `CODEX_HOME`
+  - `LLMOPS_TOKEN` отсутствует в env
+  - появляется prompt
+  - токен сохраняется в `provider_tokens/LLMOPS_TOKEN`
+  - старт продолжается дальше до TUI
+
+**Причина:**
+- Startup refresh fix и onboarding fix лежат в разных слоях.
+- Даже после зелёного startup regression и release `/models` smoke пользователь всё ещё мог упираться в старый fatal error на первом запуске.
+- Этот разрыв реально проявился на практике, пока onboarding fix был только в рабочем дереве и ещё не был доставлен до установленного бинаря.
+
+**Подтверждение:**
+- В `codex-rs/tui/src/lib.rs` добавлен интерактивный prompt flow для `RuntimeProviderTokenState::NeedsPrompt`.
+- `cargo test -p codex-tui store_prompted_provider_token --lib` зелёный.
+- Release smoke подтвердил prompt, sidecar persistence и дальнейший startup.
+
+**Альтернативы:**
+- Считать достаточным только startup/models-cache smoke.
+- Ограничиться unit tests без ручной release-проверки.
+
 ## 2026-04-14 — Исчезновение `llmops`-моделей на старте `gena` нужно считать закрытым только после проверки не только `models-manager`, но и startup path + release smoke
 **Решение:**
 - Считать bug закрытым только при выполнении всех трёх слоёв проверки:
