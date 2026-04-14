@@ -1,5 +1,38 @@
 # DL
 
+## 2026-04-14 — Исчезновение `llmops`-моделей на старте `gena` нужно считать закрытым только после проверки не только `models-manager`, но и startup path + release smoke
+**Решение:**
+- Считать bug закрытым только при выполнении всех трёх слоёв проверки:
+  - unit/integration regression в `codex-models-manager`
+  - startup regression в `gena-runtime`
+  - release smoke на реальном `gena` binary с `llmops`
+- Для startup path опираться на два связанных исправления:
+  - online refresh моделей должен работать при auth через `env_key`
+  - `ThreadManager::new()` должен использовать фактически переданный provider, а не всегда `openai`
+
+**Причина:**
+- Один только зелёный тест в `models-manager` не доказывает, что `gena` реально проходит правильный provider path на старте.
+- Во время проверки был найден второй баг глубже по стеку:
+  - `ThreadManager::new()` игнорировал provider
+  - из-за этого startup flow мог не использовать `llmops` даже после исправления env-auth refresh
+- Только после release smoke стало видно полное поведение:
+  - `GET /v1/models?client_version=0.120.0`
+  - bearer auth из `LLMOPS_TOKEN`
+  - запись remote-модели в fresh `models_cache.json`
+
+**Подтверждение:**
+- Локально зелёные:
+  - `cargo test -p codex-models-manager`
+  - `cargo test -p gena-config`
+  - `cargo test -p gena-runtime`
+- Новый startup regression test добавлен в:
+  - `codex-rs/gena-runtime/src/startup_model_tests.rs`
+- Release smoke на `target/release/gena` подтвердил, что `llmops`-каталог реально подтягивается и кэшируется на старте.
+
+**Альтернативы:**
+- Считать достаточным только unit-level проверку `models-manager`.
+- Проверять только UI/model picker без отдельного startup/runtime regression слоя.
+
 ## 2026-03-19 — Для upstream sync на `chore/update-upstream-on-gena-arch` временным operational rule должен быть oauth-safe push без `.github/workflows/*`
 **Решение:**
 - Пока push идёт через OAuth remote без `workflow` scope, не пытаться пушить изменения в:

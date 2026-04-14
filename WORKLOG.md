@@ -1,6 +1,32 @@
 # WORKLOG
 
 ## 2026-04-13
+- Подтверждено, что исходный баг с исчезновением `llmops`-моделей на старте `gena` закрыт не только unit-level тестом, но и startup/runtime проверкой.
+- Исправлен тест в:
+  - `codex-rs/models-manager/src/manager_tests.rs`
+  - новый regression test больше не мутирует process env и использует существующий непустой `PATH`
+- Найден и локально исправлен дополнительный runtime bug в:
+  - `codex-rs/core/src/thread_manager.rs`
+  - `ThreadManager::new()` раньше игнорировал переданный provider и всегда создавал `ModelsManager` на `openai`
+  - теперь startup flow `gena` действительно использует выбранный `llmops` / custom provider
+- Добавлен startup regression test:
+  - `codex-rs/gena-runtime/src/startup_model_tests.rs`
+  - тест подтверждает, что при env-auth provider remote model остаётся доступной после старта
+- Локальные проверки после этого состояния:
+  - `just fmt` PASS
+  - `RUSTC_WRAPPER= cargo test -p codex-models-manager` PASS
+  - `RUSTC_WRAPPER= cargo test -p gena-config` PASS
+  - `RUSTC_WRAPPER= cargo test -p gena-runtime` PASS
+- Отдельно прогнан release smoke на локально собранном `target/release/gena`:
+  - старт идёт через `provider: llmops`
+  - уходит живой `GET /v1/models?client_version=0.120.0`
+  - запрос использует `Authorization: Bearer smoke-token`
+  - в fresh `CODEX_HOME` появляется `models_cache.json` с remote-моделью `env-provider-model`
+- Вывод после smoke:
+  - проблема `llmops models disappear on startup` закрыта
+  - remaining open issue уже не про refresh/models cache, а про onboarding без токена
+
+## 2026-04-13
 - Выполнена локальная проверка пересобранного installer'а `gena-v0.120.0-macos-arm64-installer.sh`.
 - Installer переустановлен в `/opt/homebrew/bin`.
 - Подтверждены версии установленной локальной установки:
