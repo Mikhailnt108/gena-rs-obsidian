@@ -3245,3 +3245,22 @@
 - Ограничение:
   - повторная чистая сборка во временном worktree не завершилась из-за нехватки диска:
     - `No space left on device`
+
+## 2026-05-01 — Upstream Codex merge cleanup
+- В `gena-rs-project` был незавершённый merge upstream tag:
+  - `rust-v0.125.0`
+  - `git status` показывал: `All conflicts fixed but you are still merging`
+- Merge завершён и запушен:
+  - `678b6299a` — `Merge tag 'rust-v0.125.0'`
+  - pushed to `origin/main`
+- Оставшийся unstaged overlay после merge оформлен отдельным commit:
+  - `bd525c63c` — `chore(gena): reapply local integration after upstream merge`
+  - 74 files, Gena/local integration layer поверх upstream
+  - pushed to `origin/main`
+- Подтверждено:
+  - `just fmt` PASS
+  - `git diff --check` PASS
+  - `main...origin/main` clean, ahead/behind `0/0`
+- Диск:
+  - удалён пересобираемый `codex-rs/target`
+  - свободное место выросло примерно с `2.2Gi` до `50Gi`

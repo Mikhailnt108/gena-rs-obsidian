@@ -5,6 +5,13 @@
 
 ## State
 - В `gena-rs-project` активна ветка `main`.
+- `main` синхронизирован с `origin/main` и локальный code worktree чистый.
+- Незавершённый upstream merge закрыт и запушен:
+  - `678b6299a` `Merge tag 'rust-v0.125.0'`
+  - `bd525c63c` `chore(gena): reapply local integration after upstream merge`
+- Перед follow-up commit подтверждено:
+  - `just fmt` PASS
+  - `git diff --check` PASS
 - В `main` уже лежат оба связанных фикса для `gena + llmops`.
 - Дополнительный фикс для `/model` вынесен в отдельную ветку:
   - `codex/llmops-model-header`
