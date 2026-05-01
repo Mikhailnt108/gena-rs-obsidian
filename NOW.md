@@ -9,6 +9,13 @@
 - Незавершённый upstream merge закрыт и запушен:
   - `678b6299a` `Merge tag 'rust-v0.125.0'`
   - `bd525c63c` `chore(gena): reapply local integration after upstream merge`
+- Release artifacts пересобраны из текущего `main` (`bd525c63c`) после llmops `/model` фикса:
+  - `gena-v0.125.0-macos-arm64.tar.gz` обновлён `2026-05-02 00:10`
+  - `gena-v0.125.0-macos-arm64-installer.sh` обновлён `2026-05-02 00:11`
+  - установлен в `/opt/homebrew/bin`
+  - `/opt/homebrew/bin/gena --version` -> `gena 0.125.0`
+  - `/opt/homebrew/bin/gena-tui --version` -> `codex-tui 0.125.0`
+- Ветка `codex/llmops-model-header` не merge-нута как commit SHA из-за старой базы, но её содержательный фикс уже есть в `main` через `bd525c63c`.
 - Перед follow-up commit подтверждено:
   - `just fmt` PASS
   - `git diff --check` PASS
@@ -68,5 +75,5 @@
 - прямой UI smoke-check появления `llmops` моделей в picker пока не подтверждён
 
 ## Next Step
-- Открыть PR из `codex/llmops-model-header` или перенести `bfe45e829` в нужную integration ветку.
-- Затем прогнать прямой UI smoke-check в model picker и зафиксировать, что `llmops`-модели видны уже в интерактивном выборе моделей.
+- Удалить obsolete branch `codex/llmops-model-header`, если больше не нужен как historical checkpoint.
+- Прогнать прямой UI smoke-check в model picker и зафиксировать, что `llmops`-модели видны уже в интерактивном выборе моделей.

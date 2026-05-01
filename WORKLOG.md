@@ -3264,3 +3264,32 @@
 - Диск:
   - удалён пересобираемый `codex-rs/target`
   - свободное место выросло примерно с `2.2Gi` до `50Gi`
+
+## 2026-05-02 — Rebuild Gena release after llmops fixes
+- Проверено состояние bugfix branch:
+  - `codex/llmops-model-header` содержит commit `bfe45e829`
+  - commit SHA не входит в `main`, потому что ветка была от старой базы
+  - содержательный фикс уже присутствует в `main` через `bd525c63c`
+  - подтверждено по строкам:
+    - `X-Copilot-User-Token`
+    - `LLMOPS_DEFAULT_OSS_MODEL`
+    - `test_llmops_provider_sends_token_header_from_env`
+    - `/model` startup regression tests
+- Пересобран release из текущего clean `main`:
+  - command: `CARGO_BUILD_JOBS=1 scripts/package-gena-linux-macos.sh release`
+  - `gena-tui` release build завершился за `70m 47s`
+  - `gena` release build завершился за `26m 58s`
+  - warnings были только existing dead-code warnings
+- Обновлены artifacts:
+  - `dist/gena-v0.125.0-macos-arm64.tar.gz` — `2026-05-02 00:10`
+  - `dist/gena-v0.125.0-macos-arm64.tar.gz.sha256` — `2026-05-02 00:10`
+  - `dist/gena-v0.125.0-macos-arm64-installer.sh` — `2026-05-02 00:11`
+- Установлено через fresh self-extract installer:
+  - install dir: `/opt/homebrew/bin`
+  - `/opt/homebrew/bin/gena.bin` — `160M`, `2026-05-02 00:11`
+  - `/opt/homebrew/bin/gena-tui.bin` — `135M`, `2026-05-02 00:11`
+- Подтверждено:
+  - `/opt/homebrew/bin/gena --version` -> `gena 0.125.0`
+  - `/opt/homebrew/bin/gena-tui --version` -> `codex-tui 0.125.0`
+  - code repo status clean: `main...origin/main`
+- `codex-rs/dist/` остаётся gitignored artifact directory.
