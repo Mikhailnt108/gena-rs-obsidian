@@ -6,6 +6,14 @@
 ## State
 - В `gena-rs-project` активна ветка `main`.
 - В `main` уже лежат оба связанных фикса для `gena + llmops`.
+- Дополнительный фикс для `/model` вынесен в отдельную ветку:
+  - `codex/llmops-model-header`
+  - commit `bfe45e829` `fix(gena): send llmops token header for model refresh`
+  - push выполнен в `origin/codex/llmops-model-header`
+- Этот фикс добавляет для built-in `llmops` header:
+  - `X-Copilot-User-Token` из `LLMOPS_TOKEN`
+  - regression test, что Gena `/model` после refresh видит полный remote catalog, а не только `gpt-oss-20b (current)`
+- `AGENT_BOOT.md` обновлён: macOS/Desktop путь к Obsidian теперь `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - В `main` зафиксирован commit:
   - `c714af8a5` `fix(gena): refresh llmops models with env auth`
 - Дополнительно в `main` лежат:
@@ -20,6 +28,11 @@
   - `cargo test -p gena-config` PASS
   - `cargo test -p gena-runtime` PASS
   - `cargo test -p codex-tui store_prompted_provider_token --lib` PASS
+- Для `bfe45e829` подтверждено:
+  - `just fmt` PASS
+  - `cargo test -p codex-model-provider-info test_llmops_provider_sends_token_header_from_env` PASS в основном workspace
+  - `cargo test -p gena-runtime startup_model_tests` PASS в основном workspace
+  - повторная чистая сборка во временном worktree была остановлена нехваткой диска: `No space left on device`, при этом `git diff --check` PASS
 - Release smoke-check на локально собранном `target/release/gena` подтверждает, что исходный баг с пропадающими `llmops`-моделями закрыт:
   - `provider: llmops` реально используется на старте
   - при наличии `LLMOPS_TOKEN` уходит `GET /v1/models?client_version=0.120.0`
@@ -48,4 +61,5 @@
 - прямой UI smoke-check появления `llmops` моделей в picker пока не подтверждён
 
 ## Next Step
-- Прогнать прямой UI smoke-check в model picker и зафиксировать, что `llmops`-модели видны уже в интерактивном выборе моделей.
+- Открыть PR из `codex/llmops-model-header` или перенести `bfe45e829` в нужную integration ветку.
+- Затем прогнать прямой UI smoke-check в model picker и зафиксировать, что `llmops`-модели видны уже в интерактивном выборе моделей.

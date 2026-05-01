@@ -311,6 +311,7 @@
 - Подтверждены проверки:
   - `cargo fmt --all` PASS
   - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
 - На `gena-rs-project/update-upstream` зафиксирован cleanup checkpoint после зелёного `codex-cli`:
   - `cargo check -p codex-cli` PASS
   - `cargo test -p codex-cli` PASS
@@ -3219,3 +3220,28 @@
 - Подтверждены проверки:
   - `cargo fmt --all` PASS
   - `cargo check -p gena-runtime -p gena-plugin-api -p gena-plugins-core -p codex-cli -p codex-tui -p codex-exec -j1` PASS
+
+## 2026-05-01 — Gena llmops `/model` token header regression
+- В `gena-rs-project` зафиксирован отдельный clean-branch коммит:
+  - `bfe45e829` — `fix(gena): send llmops token header for model refresh`
+  - branch: `codex/llmops-model-header`
+  - pushed: `origin/codex/llmops-model-header`
+- Причина отдельной ветки:
+  - основной worktree на `main` содержит большой pre-existing dirty/staged state
+  - часть staged изменений лежала в тех же файлах `model-provider-info`
+  - чтобы не смешать чужие изменения, коммит сделан из чистого временного worktree от `HEAD`
+- Что изменено:
+  - built-in `llmops` provider теперь добавляет `X-Copilot-User-Token` из `LLMOPS_TOKEN`
+  - добавлена константа `LLMOPS_DEFAULT_OSS_MODEL`
+  - добавлен provider-info тест `test_llmops_provider_sends_token_header_from_env`
+  - добавлены/расширены `gena-runtime` startup regression tests для `/model`
+  - `AGENT_BOOT.md` обновлён с macOS/Desktop Obsidian path:
+    - `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`
+- Подтверждены проверки:
+  - `just fmt` PASS
+  - `cargo test -p codex-model-provider-info test_llmops_provider_sends_token_header_from_env` PASS в основном workspace
+  - `cargo test -p gena-runtime startup_model_tests` PASS в основном workspace
+  - `git diff --check` PASS в clean temp worktree
+- Ограничение:
+  - повторная чистая сборка во временном worktree не завершилась из-за нехватки диска:
+    - `No space left on device`
