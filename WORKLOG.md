@@ -1,6 +1,25 @@
 # WORKLOG
 
 ## 2026-05-02
+- Зафиксирован отдельный обязательный upstream/debug/test gate для `gena-rs`:
+  - `GENA_UPSTREAM_DEBUG_TEST_GATE.md`
+- Документ вводит правило:
+  - Codex mandatory checks обязательны, но недостаточны для Gena.
+  - Release build запрещён до debug green path на реальном LLMOps/TUI сценарии.
+- В gate включены проверки, которые должны ловить баги, найденные на `0.125.0`:
+  - `/model` показывает только current model вместо полного LLMOps catalog.
+  - LLMOps `/models` отдаёт реальную OpenAI-compatible форму `data[]`.
+  - после выбора модели Chat Completions должен держать все instructions в первом `system` message.
+  - Chat Completions stream должен отдавать `OutputItemAdded` перед `OutputTextDelta`.
+  - `CODEX_HOME` и sidecar token path должны работать без env-only assumptions.
+- В gate добавлен обязательный debug flow:
+  - `cargo build -p codex-cli --bin gena -j 4`
+  - установка `/opt/homebrew/bin/gena-debug.bin`
+  - real LLMOps non-interactive smoke
+  - ручной TUI smoke через `gena-debug`
+- `INDEX.md` обновлён ссылкой на новый gate document.
+
+## 2026-05-02
 - После upstream `rust-v0.125.0` и локальной интеграции продолжена отладка `gena + llmops` уже на debug-сборках, без release rebuild до полного green path.
 - Создан явный debug entrypoint:
   - `/opt/homebrew/bin/gena-debug`
