@@ -3953,3 +3953,25 @@
 - Сразу идти в cursor protocol.
 - Сразу делать full next-page loop.
 - Оставить paging request-only.
+
+## 2026-05-02 — Gena Chat Completions action preamble без tool call не считается финальным ответом
+**Решение:**
+- Для LLMOps Chat Completions добавить один retry, если assistant content выглядит как preamble к действию и заканчивается `:`, но `tool_calls` пустой.
+- Retry добавляет continuation nudge: вызвать подходящий tool или дать финальный ответ, если tool не нужен.
+- Gate должен включать behavioral test через `ModelClientSession::stream`, а не только helper predicate.
+
+**Причина:**
+- Реальный `gena-debug` turn завершался после фразы `Посмотрим общий список крупных файлов и папок в корне:` без следующего command execution.
+- Это не transport panic и не TUI render bug; это неправильная трактовка неполного Chat Completions ответа как финального.
+
+**Подтверждение:**
+- Реализовано в `gena-rs-project`:
+  - `bd164e1e1` — `fix(gena): retry chat action preamble without tool call`
+- Проверено focused-тестами:
+  - `chat_completion_retries_action_preamble_without_tool_call`
+  - `chat_completion_detects_action_preamble_without_tool_call`
+
+**Альтернативы:**
+- Всегда форсировать tool_choice при наличии tools.
+- Считать любой assistant content с `:` незавершённым.
+- Игнорировать provider quirk и требовать ручного retry от пользователя.

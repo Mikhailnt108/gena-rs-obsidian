@@ -13,6 +13,7 @@ Applies from: `gena 0.125.0`
 - LLMOps `/models` возвращает OpenAI-compatible `data[]`, а тесты мокают не тот формат.
 - После выбора модели через `/model` Chat Completions получает 400 `System message must be at the beginning`.
 - Chat Completions stream отдаёт `OutputTextDelta` до `OutputItemAdded` и роняет debug/TUI.
+- Chat Completions turn завершается после фразы вида `Посмотрим ...:` без следующего tool call.
 - `CODEX_HOME` / sidecar token path не создан или не используется.
 - Release installer переустанавливает старое состояние до полного smoke-check.
 
@@ -114,6 +115,8 @@ Release build запрещён, пока не пройдены:
 
 - `cargo test -p codex-core chat_completions_request_merges_instruction_messages_into_first_system_message`
 - `cargo test -p codex-core chat_completion_text_stream_adds_item_before_text_delta`
+- `cargo test -p codex-core chat_completion_retries_action_preamble_without_tool_call`
+- `cargo test -p codex-core chat_completion_detects_action_preamble_without_tool_call`
 - `cargo test -p codex-api endpoint::chat_completions::tests`
 
 Что обязано проверяться:
@@ -127,6 +130,10 @@ Release build запрещён, пока не пройдены:
   - `OutputItemDone`
   - `Completed`
 - TUI не может получить `OutputTextDelta without active item`.
+- action preamble без tool call не считается финальным turn:
+  - пример из реального бага: `Похоже... Посмотрим общий список крупных файлов и папок в корне:`
+  - должен быть retry с continuation nudge.
+  - тест должен проходить через `ModelClientSession::stream`, а не только через helper predicate.
 
 ### Gena TUI Gate
 
@@ -159,6 +166,15 @@ cargo build -p codex-cli --bin gena -j 4
 ```bash
 install -m 0755 target/debug/gena /opt/homebrew/bin/gena-debug.bin
 install -m 0755 target/debug/gena /opt/homebrew/bin/gena.bin
+```
+
+Если на диске меньше 1GB свободно, не использовать temp-copy install для двух 477M debug binaries. Использовать один бинарь и hardlink:
+
+```bash
+rm -f /opt/homebrew/bin/gena-debug.bin /opt/homebrew/bin/gena.bin
+cp target/debug/gena /opt/homebrew/bin/gena-debug.bin
+ln /opt/homebrew/bin/gena-debug.bin /opt/homebrew/bin/gena.bin
+chmod 0755 /opt/homebrew/bin/gena-debug.bin /opt/homebrew/bin/gena.bin
 ```
 
 Wrapper `/opt/homebrew/bin/gena-debug` должен:
@@ -222,6 +238,28 @@ gena-debug exec --oss --local-provider llmops \
 - нет `System message must be at the beginning`.
 - нет `OutputTextDelta without active item`.
 - нет panic/backtrace.
+
+### Tool Loop Smoke
+
+Проверить, что Chat Completions не завершает turn после action preamble:
+
+```bash
+LLMOPS_TOKEN="$(tr -d '\n\r' < ~/.gena-codex/provider_tokens/LLMOPS_TOKEN)" \
+gena-debug exec --oss --local-provider llmops \
+  -m qwen3.5-35b-a3b \
+  --sandbox read-only \
+  --skip-git-repo-check \
+  --color never \
+  --json \
+  --ephemeral \
+  'Проверь /Users/mntabunkov/sandbox и, если там мало данных, продолжи следующей безопасной командой. Не завершай ход после фразы о следующей проверке.'
+```
+
+Проверить:
+
+- после preamble есть следующий `command_execution` или явный финальный ответ.
+- нет `task_complete` сразу после строки, заканчивающейся `:`.
+- не запускать full-volume `du -ah /System/Volumes/Data` на почти заполненном диске.
 
 ## Manual TUI Smoke
 

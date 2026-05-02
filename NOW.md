@@ -16,6 +16,10 @@
 - Обычный `/opt/homebrew/bin/gena` сейчас тоже указывает на свежий debug binary, но для ручной проверки использовать именно `gena-debug`.
 
 ## Latest Code Commits
+- `bd164e1e1` `fix(gena): retry chat action preamble without tool call`
+  - Chat Completions path больше не завершает turn, если модель ответила preamble вида `Посмотрим ...:` без tool call.
+  - Core делает один retry с continuation nudge: либо вызвать tool, либо дать финальный ответ.
+  - Добавлен behavioral mock-server test, который проходит через настоящий `ModelClientSession::stream` для Chat Completions и проверяет второй HTTP request.
 - `15bbd633b` `fix(gena): emit chat item before text delta`
   - Chat Completions adapter теперь отдаёт события в порядке `OutputItemAdded -> OutputTextDelta -> OutputItemDone`.
   - Закрывает debug panic `OutputTextDelta without active item` после ответа LLMOps.
@@ -32,8 +36,8 @@
 
 ## Installed Debug
 - Свежая debug-сборка установлена:
-  - `/opt/homebrew/bin/gena-debug.bin` — `2026-05-02 15:06:34`
-  - `/opt/homebrew/bin/gena.bin` — `2026-05-02 15:07:25`
+  - `/opt/homebrew/bin/gena-debug.bin` — `2026-05-02 15:45`
+  - `/opt/homebrew/bin/gena.bin` — hardlink на тот же inode, чтобы не удваивать 477M на почти полном диске.
 - Проверка версии:
   - `gena-debug --version` -> `gena 0.125.0`
 
@@ -48,11 +52,16 @@
   - `cargo test -p codex-api parses_openai_compatible_models_response` PASS
   - `cargo test -p codex-api parses_models_response` PASS
   - `cargo test -p codex-api endpoint::chat_completions::tests` PASS
+  - `cargo test -p codex-core chat_completion_retries_action_preamble_without_tool_call` PASS
+  - `cargo test -p codex-core chat_completion_detects_action_preamble_without_tool_call` PASS
   - `cargo test -p codex-core chat_completions_request_merges_instruction_messages_into_first_system_message` PASS
   - `cargo test -p codex-core chat_completion_text_stream_adds_item_before_text_delta` PASS
 - Scoped fix/lint:
   - `just fix -p codex-api` PASS
-  - `just fix -p codex-core` completed
+  - `just fix -p codex-core` completed; existing `expect_used` warning remains in `core/tests/suite/shell_command.rs`.
+- Real debug smoke:
+  - `gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ...` reached a second `command_execution` after an action preamble.
+  - Smoke was stopped manually because the model launched a full `du -ah /System/Volumes/Data` scan on a nearly full disk.
 
 ## Important Operational Notes
 - Не запускать `codex-rs/dist/gena-v0.125.0-macos-arm64-installer.sh` для текущей проверки: это release installer, а текущие фиксы валидируются через debug.
@@ -63,11 +72,11 @@
   - отправить `привет`
   - убедиться, что нет 400, panic, зависания, и ответ отображается в TUI.
 - На диске критически мало места:
-  - `/System/Volumes/Data` показывает около `531MiB` свободно после последней debug установки.
+  - `/System/Volumes/Data` показывает около `1.1GiB` свободно после hardlink debug установки.
   - Следующая сборка может снова упереться в `No space left on device`.
 
 ## Blockers
-- Нужен ручной TUI smoke-check на свежем `gena-debug` после `15bbd633b`.
+- Нужен ручной TUI smoke-check на свежем `gena-debug` после `bd164e1e1`.
 - Перед release желательно освободить место на диске.
 
 ## Next Step

@@ -3372,3 +3372,40 @@
   - `/opt/homebrew/bin/gena-tui --version` -> `codex-tui 0.125.0`
   - code repo status clean: `main...origin/main`
 - `codex-rs/dist/` остаётся gitignored artifact directory.
+
+## 2026-05-02 — Gena Chat Completions tool-loop interruption
+- Пользователь воспроизвёл баг в `gena-debug`:
+  - после выбора `qwen3.5-35b-a3b` модель выполнила `df`
+  - выполнила `du -sh *`
+  - затем ответила `Похоже... Посмотрим общий список крупных файлов и папок в корне:`
+  - turn завершился без следующего tool call
+- По rollout/logs подтвержден root cause:
+  - LLMOps Chat Completions вернул assistant content, который выглядит как preamble к действию
+  - tool_calls при этом были пустые
+  - core счёл это финальным ответом и отправил `task_complete`
+- Исправление в `gena-rs-project`:
+  - `bd164e1e1` — `fix(gena): retry chat action preamble without tool call`
+- Что изменено:
+  - Chat Completions path детектит action preamble без tool call.
+  - При таком shape core делает один retry с continuation nudge.
+  - Если tool всё равно не нужен, модель может дать финальный ответ; если нужен — должна вызвать tool.
+- Regression coverage:
+  - `chat_completion_detects_action_preamble_without_tool_call`
+  - `chat_completion_retries_action_preamble_without_tool_call`
+  - второй тест поднимает mock `/v1/chat/completions`, проходит через настоящий `ModelClientSession::stream`, проверяет два HTTP request и nudge во втором request body.
+- Подтверждены проверки:
+  - `just fmt` PASS
+  - `cargo test -p codex-core chat_completion_retries_action_preamble_without_tool_call` PASS
+  - `cargo test -p codex-core chat_completion_detects_action_preamble_without_tool_call` PASS
+  - `cargo test -p codex-core chat_completions_request_merges_instruction_messages_into_first_system_message` PASS
+  - `cargo test -p codex-core chat_completion_text_stream_adds_item_before_text_delta` PASS
+  - `just fix -p codex-core` completed, existing `expect_used` warning remains in `core/tests/suite/shell_command.rs`
+  - `cargo build -p codex-cli --bin gena -j 4` PASS
+- Debug install:
+  - `/opt/homebrew/bin/gena-debug.bin` installed from `target/debug/gena`
+  - `/opt/homebrew/bin/gena.bin` is a hardlink to the same binary to save disk
+- Real smoke:
+  - `gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ...` reached a second `command_execution` after the preamble.
+  - Smoke was stopped because the model launched a heavy `du -ah /System/Volumes/Data` scan.
+- Release:
+  - not rebuilt intentionally; debug green path is still the gate before release.
