@@ -1,79 +1,77 @@
 # NOW
 
 ## Current Goal
-Довести post-fix валидацию `gena + llmops` до продуктового финала: после закрытия startup disappearance и first-run onboarding остаётся только прямой UI smoke-check модели в picker.
+Довести `gena + llmops` до подтверждённого пользовательского green path на debug-сборке, и только после этого пересобирать release artifacts.
 
 ## State
-- В `gena-rs-project` активна ветка `main`.
-- `main` синхронизирован с `origin/main` и локальный code worktree чистый.
-- Незавершённый upstream merge закрыт и запушен:
-  - `678b6299a` `Merge tag 'rust-v0.125.0'`
-  - `bd525c63c` `chore(gena): reapply local integration after upstream merge`
-- Release artifacts пересобраны из текущего `main` (`bd525c63c`) после llmops `/model` фикса:
-  - `gena-v0.125.0-macos-arm64.tar.gz` обновлён `2026-05-02 00:10`
-  - `gena-v0.125.0-macos-arm64-installer.sh` обновлён `2026-05-02 00:11`
-  - установлен в `/opt/homebrew/bin`
-  - `/opt/homebrew/bin/gena --version` -> `gena 0.125.0`
-  - `/opt/homebrew/bin/gena-tui --version` -> `codex-tui 0.125.0`
-- Ветка `codex/llmops-model-header` не merge-нута как commit SHA из-за старой базы, но её содержательный фикс уже есть в `main` через `bd525c63c`.
-- Перед follow-up commit подтверждено:
-  - `just fmt` PASS
-  - `git diff --check` PASS
-- В `main` уже лежат оба связанных фикса для `gena + llmops`.
-- Дополнительный фикс для `/model` вынесен в отдельную ветку:
-  - `codex/llmops-model-header`
-  - commit `bfe45e829` `fix(gena): send llmops token header for model refresh`
-  - push выполнен в `origin/codex/llmops-model-header`
-- Этот фикс добавляет для built-in `llmops` header:
-  - `X-Copilot-User-Token` из `LLMOPS_TOKEN`
-  - regression test, что Gena `/model` после refresh видит полный remote catalog, а не только `gpt-oss-20b (current)`
-- `AGENT_BOOT.md` обновлён: macOS/Desktop путь к Obsidian теперь `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
-- В `main` зафиксирован commit:
-  - `c714af8a5` `fix(gena): refresh llmops models with env auth`
-- Дополнительно в `main` лежат:
-  - `7a87e9437` `fix(gena): keep llmops models available on startup`
-    - `ThreadManager::new()` теперь использует реально переданный provider
-    - startup regression test добавлен в `gena-runtime`
-  - `d5f73631d` `fix(gena): prompt for llmops token on first run`
-    - при `RuntimeProviderTokenState::NeedsPrompt` TUI теперь спрашивает токен, сохраняет его в sidecar и продолжает старт
-- Локально подтверждено:
-  - `just fmt` PASS
-  - `cargo test -p codex-models-manager` PASS
-  - `cargo test -p gena-config` PASS
-  - `cargo test -p gena-runtime` PASS
-  - `cargo test -p codex-tui store_prompted_provider_token --lib` PASS
-- Для `bfe45e829` подтверждено:
-  - `just fmt` PASS
-  - `cargo test -p codex-model-provider-info test_llmops_provider_sends_token_header_from_env` PASS в основном workspace
-  - `cargo test -p gena-runtime startup_model_tests` PASS в основном workspace
-  - повторная чистая сборка во временном worktree была остановлена нехваткой диска: `No space left on device`, при этом `git diff --check` PASS
-- Release smoke-check на локально собранном `target/release/gena` подтверждает, что исходный баг с пропадающими `llmops`-моделями закрыт:
-  - `provider: llmops` реально используется на старте
-  - при наличии `LLMOPS_TOKEN` уходит `GET /v1/models?client_version=0.120.0`
-  - запрос идёт с `Authorization: Bearer <token>`
-  - в свежем `CODEX_HOME` создаётся `models_cache.json` с remote-моделью `env-provider-model`
-- Отдельно подтверждён и first-run onboarding fix на release binary без `LLMOPS_TOKEN` в env:
-  - появляется интерактивный prompt для `LLMOPS_TOKEN`
-  - после ввода токена создаётся `provider_tokens/LLMOPS_TOKEN`
-  - старт продолжается дальше до TUI, а затем создаётся `models_cache.json` с `client_version = 0.120.0`
-- Дополнительно найден packaging drift:
-  - старый `gena-v0.120.0-macos-arm64-installer.sh` из `Downloads` был собран до onboarding fix и переустанавливал pre-fix binary
-- Актуальные macOS arm64 артефакты `gena-v0.120.0` пересобраны уже после onboarding fix:
-  - `gena-v0.120.0-macos-arm64.tar.gz` обновлён в `2026-04-14 13:45:36`
-  - `gena-v0.120.0-macos-arm64.tar.gz.sha256` обновлён в `2026-04-14 13:45:36`
-  - `gena-v0.120.0-macos-arm64-installer.sh` пересоздан в `2026-04-14 13:45:43`
-- Новый installer и новые release binaries локально установлены в `/opt/homebrew/bin`:
-  - `gena 0.120.0`
-  - `codex-tui 0.120.0`
-- При запуске установленного `/opt/homebrew/bin/gena` на чистом `CODEX_HOME` без `LLMOPS_TOKEN` теперь подтверждается:
-  - появляется prompt `Enter token for \`LLMOPS_TOKEN\``
-- Исходный bug про startup disappearance `llmops`-моделей закрыт.
-- First-run onboarding bug без `LLMOPS_TOKEN` тоже закрыт.
-- Отдельный UI smoke-check через model picker всё ещё не закрыт.
+- Кодовый репозиторий: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
+- Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
+- Активная кодовая ветка: `main`.
+- `main` синхронизирован с `origin/main`.
+- Release после последних багфиксов не пересобирался намеренно: сейчас цикл проверки идёт через debug build.
+- Для явного запуска debug создана команда:
+  - `gena-debug`
+  - wrapper: `/opt/homebrew/bin/gena-debug`
+  - binary: `/opt/homebrew/bin/gena-debug.bin`
+- Обычный `/opt/homebrew/bin/gena` сейчас тоже указывает на свежий debug binary, но для ручной проверки использовать именно `gena-debug`.
+
+## Latest Code Commits
+- `15bbd633b` `fix(gena): emit chat item before text delta`
+  - Chat Completions adapter теперь отдаёт события в порядке `OutputItemAdded -> OutputTextDelta -> OutputItemDone`.
+  - Закрывает debug panic `OutputTextDelta without active item` после ответа LLMOps.
+- `2c9004753` `fix(gena): keep chat system message first`
+  - Для Chat Completions все `system` / `developer` instructions сворачиваются в единственный первый `system` message.
+  - Закрывает LLMOps 400: `System message must be at the beginning`.
+- `2197cbef3` `fix(gena): parse llmops model catalog`
+  - `/models` теперь парсит реальную LLMOps/OpenAI-compatible форму `{"object":"list","data":[...]}`.
+  - Закрывает баг, где `/model` показывал только текущую `gpt-oss-20b`.
+- `1cd2e69c3` `fix(gena): refresh llmops models with sidecar token`
+  - Gena wrapper создаёт `CODEX_HOME`.
+  - LLMOps token берётся из sidecar `~/.gena-codex/provider_tokens/LLMOPS_TOKEN`.
+  - Для refresh добавлены нужные auth headers.
+
+## Installed Debug
+- Свежая debug-сборка установлена:
+  - `/opt/homebrew/bin/gena-debug.bin` — `2026-05-02 15:06:34`
+  - `/opt/homebrew/bin/gena.bin` — `2026-05-02 15:07:25`
+- Проверка версии:
+  - `gena-debug --version` -> `gena 0.125.0`
+
+## Verified
+- Реальный LLMOps `/v1/models` с sidecar token возвращает OpenAI-compatible `data[]` catalog.
+- Реальный sanity-check через debug `gena exec` с моделью `qwen3.5-35b-a3b` прошёл:
+  - ответ: `OK`
+  - без `System message must be at the beginning`
+  - без `OutputTextDelta without active item`
+- Точечные тесты:
+  - `cargo test -p gena-runtime gena_model_list_keeps_full_llmops_catalog_when_current_model_is_configured` PASS
+  - `cargo test -p codex-api parses_openai_compatible_models_response` PASS
+  - `cargo test -p codex-api parses_models_response` PASS
+  - `cargo test -p codex-api endpoint::chat_completions::tests` PASS
+  - `cargo test -p codex-core chat_completions_request_merges_instruction_messages_into_first_system_message` PASS
+  - `cargo test -p codex-core chat_completion_text_stream_adds_item_before_text_delta` PASS
+- Scoped fix/lint:
+  - `just fix -p codex-api` PASS
+  - `just fix -p codex-core` completed
+
+## Important Operational Notes
+- Не запускать `codex-rs/dist/gena-v0.125.0-macos-arm64-installer.sh` для текущей проверки: это release installer, а текущие фиксы валидируются через debug.
+- Сборку release делать только после ручного green path в TUI:
+  - `gena-debug`
+  - `/model`
+  - выбрать LLMOps модель из полного списка
+  - отправить `привет`
+  - убедиться, что нет 400, panic, зависания, и ответ отображается в TUI.
+- На диске критически мало места:
+  - `/System/Volumes/Data` показывает около `531MiB` свободно после последней debug установки.
+  - Следующая сборка может снова упереться в `No space left on device`.
 
 ## Blockers
-- прямой UI smoke-check появления `llmops` моделей в picker пока не подтверждён
+- Нужен ручной TUI smoke-check на свежем `gena-debug` после `15bbd633b`.
+- Перед release желательно освободить место на диске.
 
 ## Next Step
-- Удалить obsolete branch `codex/llmops-model-header`, если больше не нужен как historical checkpoint.
-- Прогнать прямой UI smoke-check в model picker и зафиксировать, что `llmops`-модели видны уже в интерактивном выборе моделей.
+- Запустить `gena-debug`.
+- В TUI выбрать LLMOps модель через `/model`.
+- Отправить короткий prompt.
+- Если green path подтверждён, только тогда пересобирать release artifacts и installer.

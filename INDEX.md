@@ -11,9 +11,11 @@
 - [[PROCESS]] — стандарт работы
 
 ## Ссылки на Project Code
+- macOS/Desktop: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`
 - Termux (Android): `/root/pr-infra-tools-aqa/gena-rs/gena-rs-project`
 - Ubuntu (Zed): `__PATH_TODO__`
 
 ## Ссылки на Project Obsidian
+- macOS/Desktop: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`
 - Termux (Android): `/root/pr-infra-tools-aqa/gena-rs/gena-rs-obsidian`
 - Ubuntu (Zed): `__PATH_TODO__`

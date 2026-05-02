@@ -1,5 +1,37 @@
 # DL
 
+## 2026-05-02 — `gena + llmops` release нельзя пересобирать раньше debug green path на реальном TUI
+**Решение:**
+- После повторных регрессов `llmops` больше не пересобирать release сразу после unit-level фикса.
+- Сначала собирать и устанавливать debug binary:
+  - `gena-debug`
+  - `/opt/homebrew/bin/gena-debug.bin`
+- Считать фикс готовым к release только после реального TUI smoke:
+  - открыть `gena-debug`
+  - выбрать LLMOps модель через `/model`
+  - отправить короткий prompt
+  - подтвердить отсутствие 400, panic, зависания и увидеть ответ в TUI.
+
+**Причина:**
+- Предыдущие тесты проверяли не реальность, а слишком идеализированный контракт:
+  - `/models` mock использовал `{"models":[...]}`, хотя LLMOps реально отдаёт `{"object":"list","data":[...]}`
+  - после выбора модели тесты не ловили Chat Completions payload, где instruction message оказывался не в допустимой позиции
+  - stream adapter test не проверял порядок `OutputItemAdded` перед `OutputTextDelta`
+- Release build занимает слишком много времени и диска, поэтому быстрый debug loop дешевле и честнее.
+
+**Подтверждение:**
+- Добавлены/обновлены regression tests:
+  - `gena_model_list_keeps_full_llmops_catalog_when_current_model_is_configured`
+  - `parses_openai_compatible_models_response`
+  - `chat_completions_request_merges_instruction_messages_into_first_system_message`
+  - `chat_completion_text_stream_adds_item_before_text_delta`
+- Реальный LLMOps sanity-check на `qwen3.5-35b-a3b` через `gena-debug exec` вернул `OK` без 400 и без debug panic.
+
+**Альтернативы:**
+- Сразу пересобирать release после каждого фикса.
+- Полагаться только на unit tests без live LLMOps smoke.
+- Проверять только `/model` catalog, не проверяя последующий prompt после выбора модели.
+
 ## 2026-04-14 — `gena + llmops` нельзя считать закрытым без отдельной first-run onboarding проверки на release binary
 **Решение:**
 - Считать post-fix состояние `gena + llmops` завершённым только если подтверждены оба пользовательских сценария:

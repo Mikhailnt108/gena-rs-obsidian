@@ -1,5 +1,65 @@
 # WORKLOG
 
+## 2026-05-02
+- После upstream `rust-v0.125.0` и локальной интеграции продолжена отладка `gena + llmops` уже на debug-сборках, без release rebuild до полного green path.
+- Создан явный debug entrypoint:
+  - `/opt/homebrew/bin/gena-debug`
+  - `/opt/homebrew/bin/gena-debug.bin`
+  - wrapper печатает `gena-debug: running debug build ...`, чтобы не путать с release installer.
+- Найден реальный формат LLMOps `/v1/models`:
+  - не внутренний Codex `{"models":[...]}`
+  - а OpenAI-compatible `{"object":"list","data":[{"id":...,"modelName":...}]}`
+- Исправлено:
+  - `2197cbef3` `fix(gena): parse llmops model catalog`
+  - Gena `/model` regression test теперь мокает реальную LLMOps форму `data[]`, а не теоретическую `models[]`.
+  - `codex-api` parser поддерживает обе формы.
+- Подтверждены проверки:
+  - `cargo test -p gena-runtime gena_model_list_keeps_full_llmops_catalog_when_current_model_is_configured` PASS
+  - `cargo test -p codex-api parses_openai_compatible_models_response` PASS
+  - `cargo test -p codex-api parses_models_response` PASS
+  - `cargo test -p codex-api endpoint::chat_completions::tests` PASS
+  - `just fix -p codex-api` PASS
+- Затем в TUI найден старый runtime bug после выбора модели из `/model`:
+  - LLMOps возвращал 400:
+    - `System message must be at the beginning`
+  - причина: после model switch в Chat Completions payload попадал отдельный developer/model-switch instruction не как первый system message.
+- Исправлено:
+  - `2c9004753` `fix(gena): keep chat system message first`
+  - Chat Completions request builder теперь сворачивает все `system` / `developer` instruction messages в один первый `system` message.
+- Добавлен regression test:
+  - `chat_completions_request_merges_instruction_messages_into_first_system_message`
+- После этого найден следующий debug panic в TUI/non-interactive path:
+  - `OutputTextDelta without active item`
+  - причина: Chat Completions adapter отправлял `OutputTextDelta` до `OutputItemAdded`.
+- Исправлено:
+  - `15bbd633b` `fix(gena): emit chat item before text delta`
+  - Chat Completions adapter теперь отдаёт события в порядке:
+    - `Created`
+    - `OutputItemAdded`
+    - `OutputTextDelta`
+    - `OutputItemDone`
+    - `Completed`
+- Добавлен regression test:
+  - `chat_completion_text_stream_adds_item_before_text_delta`
+- Подтверждены проверки:
+  - `cargo test -p codex-core chat_completions_request_merges_instruction_messages_into_first_system_message` PASS
+  - `cargo test -p codex-core chat_completion_text_stream_adds_item_before_text_delta` PASS
+  - `just fix -p codex-core` completed
+- Реальный LLMOps sanity-check после `15bbd633b`:
+  - команда через `gena-debug exec`
+  - модель `qwen3.5-35b-a3b`
+  - ответ `OK`
+  - нет 400 `System message must be at the beginning`
+  - нет panic `OutputTextDelta without active item`
+- Свежий debug установлен:
+  - `/opt/homebrew/bin/gena-debug.bin` — `2026-05-02 15:06:34`
+  - `/opt/homebrew/bin/gena.bin` — `2026-05-02 15:07:25`
+- Важный operational итог:
+  - release installer пока не пересобирать и не запускать
+  - следующая обязательная проверка — ручной TUI smoke через `gena-debug`
+- Отдельный blocker:
+  - диск почти заполнен, свободно около `531MiB`; следующая сборка может снова упасть с `No space left on device`.
+
 ## 2026-04-14
 - Локализован источник ложного повторного регресса:
   - пользователь переустановил `gena` старым `gena-v0.120.0-macos-arm64-installer.sh` из `Downloads`
