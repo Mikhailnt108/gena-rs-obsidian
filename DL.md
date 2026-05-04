@@ -3975,3 +3975,48 @@
 - Всегда форсировать tool_choice при наличии tools.
 - Считать любой assistant content с `:` незавершённым.
 - Игнорировать provider quirk и требовать ручного retry от пользователя.
+
+## 2026-05-04 — Assistant text перед tool call в Chat Completions не должен закрывать turn
+**Решение:**
+- Если Chat Completions response содержит и assistant text, и tool calls, synthesized assistant message должен иметь `end_turn: false`.
+- `end_turn: true` остаётся только для assistant text без tool calls.
+- Regression test должен покрывать и structured `tool_calls`, и legacy `<tool_call><function_call>...` markup.
+
+**Причина:**
+- Реальный LLMOps/Gena flow может вернуть prelude text и tool call в одном Chat Completions response.
+- `end_turn: true` на prelude создаёт ложную turn boundary перед tool result и может ломать continuation/interruption semantics.
+
+**Подтверждение:**
+- Реализовано в рабочем дереве `gena-rs-project`.
+- Проверено focused-тестами:
+  - `chat_completion_text_before_tool_call_does_not_end_turn`
+  - `chat_completion_text_before_legacy_tool_call_does_not_end_turn`
+  - `chat_completions_text_before_tool_call_runs_tool_loop_to_completion`
+
+**Альтернативы:**
+- Всегда ставить `end_turn: true` для любого assistant text.
+- Не синтезировать assistant item для prelude text.
+- Решать это только на уровне TUI rendering.
+
+## 2026-05-04 — Release artifacts пересобраны до ручного TUI smoke по явному запросу
+**Решение:**
+- Пересобрать `gena v0.125.0` release artifacts после focused tests, debug build и non-interactive LLMOps smoke.
+- Сохранить в `NOW.md` факт, что manual TUI smoke всё ещё не закрыт.
+
+**Причина:**
+- Пользователь явно попросил продолжить и не забыть собрать release `gena`.
+- Debug/non-interactive path дал полезную проверку hotfix, но manual TUI gate остаётся отдельным user-visible сценарным gate.
+
+**Подтверждение:**
+- Пересобраны:
+  - `dist/gena-v0.125.0-macos-arm64.tar.gz`
+  - `dist/gena-v0.125.0-macos-arm64.tar.gz.sha256`
+  - `dist/gena-v0.125.0-macos-arm64-installer.sh`
+- Artifact versions:
+  - `gena 0.125.0`
+  - `codex-tui 0.125.0`
+
+**Альтернативы:**
+- Строго остановиться до ручного TUI smoke.
+- Не собирать release до отдельного commit.
+- Собирать только debug и оставить release на следующую сессию.

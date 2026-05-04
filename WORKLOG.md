@@ -1,5 +1,49 @@
 # WORKLOG
 
+## 2026-05-04 — Chat Completions text+tool-call end_turn hotfix and release rebuild
+- Продолжена работа из состояния после `bd164e1e1`.
+- В рабочем дереве `gena-rs-project` найден и оставлен как текущий hotfix новый bug:
+  - Chat Completions response может содержать assistant text и `tool_calls` в одном ответе.
+  - Adapter раньше синтезировал assistant message с `end_turn: true`, даже если далее в этом же response есть tool call.
+  - Это создавало ложную turn boundary перед tool result и могло выглядеть как interruption/неверное continuation state.
+- Исправление:
+  - `codex-rs/core/src/client.rs`
+  - synthesized assistant message теперь ставит `end_turn: false`, если `tool_items` не пустой.
+- Regression coverage:
+  - `chat_completion_text_before_tool_call_does_not_end_turn`
+  - `chat_completion_text_before_legacy_tool_call_does_not_end_turn`
+  - `chat_completions_text_before_tool_call_runs_tool_loop_to_completion`
+- Добавлена кодовая заметка:
+  - `docs/gena-bugs.md`
+- Подтверждены проверки:
+  - `just fmt` PASS
+  - `cargo test -p codex-core chat_completion_text` PASS with `RUSTC_WRAPPER=`
+  - `cargo test -p codex-core chat_completions_text_before_tool_call_runs_tool_loop_to_completion` PASS with `RUSTC_WRAPPER=`
+  - `just fix -p codex-core` completed; existing `expect_used` warning remains in `core/tests/suite/shell_command.rs`
+  - `cargo build -p codex-cli --bin gena -j 4` PASS
+- Debug install:
+  - `/opt/homebrew/bin/gena-debug.bin` copied from `target/debug/gena`
+  - `/opt/homebrew/bin/gena.bin` hardlinked to same inode
+  - `gena-debug --version` -> `gena 0.125.0`
+- Real debug smoke:
+  - first run without env token failed:
+    - `Missing environment variable: LLMOPS_TOKEN`
+  - rerun with `LLMOPS_TOKEN` read from sidecar file returned `OK`
+  - nonfatal post-smoke log remains:
+    - `failed to record rollout items: thread ... not found`
+- Release rebuild was performed by explicit user request before manual TUI smoke was completed:
+  - command: `CARGO_BUILD_JOBS=4 scripts/package-gena-linux-macos.sh release`
+  - `gena-tui` release build completed in `23m 09s`
+  - `gena` release build completed in `20m 17s`
+  - installer regenerated with `scripts/make-gena-self-extract.sh`
+- Updated artifacts:
+  - `dist/gena-v0.125.0-macos-arm64.tar.gz` — `2026-05-04 23:30`
+  - `dist/gena-v0.125.0-macos-arm64.tar.gz.sha256` — `2026-05-04 23:30`
+  - `dist/gena-v0.125.0-macos-arm64-installer.sh` — `2026-05-04 23:30`
+- Artifact version checks:
+  - `dist/gena-v0.125.0-macos-arm64/gena --version` -> `gena 0.125.0`
+  - `dist/gena-v0.125.0-macos-arm64/gena-tui --version` -> `codex-tui 0.125.0`
+
 ## 2026-05-02
 - Зафиксирован отдельный обязательный upstream/debug/test gate для `gena-rs`:
   - `GENA_UPSTREAM_DEBUG_TEST_GATE.md`
