@@ -4,6 +4,7 @@
 - [[NOW]] — текущее состояние
 - [[WORKLOG]] — хронология работ
 - [[DL]] — решения и причины
+- [[GENA_BUGS]] — реестр Gena-specific багов по бренду, LLMOps, Chat Completions, installer/runtime
 
 ## База
 - [[IDEA]] — архитектурная идея и принципы
