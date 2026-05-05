@@ -1,5 +1,34 @@
 # WORKLOG
 
+## 2026-05-05 — Installed `0.128.0` debug build into terminal entrypoints
+- Локальные debug binaries уже были собраны:
+  - `codex-rs/target/debug/gena` -> `gena 0.128.0`
+  - `codex-rs/target/debug/gena-tui` -> `gena-tui 0.128.0`
+- Обновлены `/opt/homebrew/bin` debug/install entrypoints:
+  - `/opt/homebrew/bin/gena-debug.bin` copied from `target/debug/gena`
+  - `/opt/homebrew/bin/gena.bin` hardlinked to `/opt/homebrew/bin/gena-debug.bin`
+  - `/opt/homebrew/bin/gena-tui.bin` copied from `target/debug/gena-tui`
+  - wrappers `/opt/homebrew/bin/gena`, `/opt/homebrew/bin/gena-debug`, `/opt/homebrew/bin/gena-tui` preserved
+- Выявлено, что в текущем PATH plain `gena` and `gena-tui` resolve через nvm first:
+  - `~/.nvm/versions/node/v22.22.2/bin/gena`
+  - `~/.nvm/versions/node/v22.22.2/bin/gena-tui`
+- Поэтому active nvm shim binaries тоже обновлены:
+  - `~/.nvm/versions/node/v22.22.2/bin/gena.bin`
+  - `~/.nvm/versions/node/v22.22.2/bin/gena-tui.bin`
+- Final terminal checks:
+  - `which gena` -> nvm shim
+  - `which gena-tui` -> nvm shim
+  - `which gena-debug` -> `/opt/homebrew/bin/gena-debug`
+  - `gena --version` -> `gena 0.128.0`
+  - `gena-tui --version` -> `gena-tui 0.128.0`
+  - `gena-debug --version` -> `gena 0.128.0`
+  - `gena --help` -> `Gena CLI`, `Usage: gena ...`
+- Code repo remained clean and synced with `origin/main`.
+- Remaining release blockers:
+  - real LLMOps smoke not yet run for installed `0.128.0` debug
+  - manual TUI smoke not yet run for installed `0.128.0` debug
+  - release package/installer `0.128.0` not built
+
 ## 2026-05-05 — Rename upstream gate into practical update playbook
 - `GENA_UPSTREAM_DEBUG_TEST_GATE.md` переименован в `GENA_UPSTREAM_UPDATE.md`.
 - Назначение документа расширено:

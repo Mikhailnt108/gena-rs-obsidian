@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Довести `gena` после upstream `rust-v0.128.0` до готового debug/release pipeline: branding bugs закрыты и запушены, дальше нужен новый `0.128.0` package/installer и install smoke.
+Довести `gena` после upstream `rust-v0.128.0` до release package/installer: debug build установлен и проверен, дальше real LLMOps smoke, manual TUI smoke и сборка `0.128.0` artifacts.
 
 ## State
 - Кодовый репозиторий: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -18,7 +18,13 @@
 - Debug binaries собраны локально:
   - `codex-rs/target/debug/gena` -> `gena 0.128.0`
   - `codex-rs/target/debug/gena-tui` -> `gena-tui 0.128.0`
-- Debug binaries НЕ установлены в `/opt/homebrew/bin` в этом шаге.
+- Debug binaries установлены:
+  - `/opt/homebrew/bin/gena-debug.bin` -> `gena 0.128.0`
+  - `/opt/homebrew/bin/gena.bin` -> hardlink на `/opt/homebrew/bin/gena-debug.bin`
+  - `/opt/homebrew/bin/gena-tui.bin` -> `gena-tui 0.128.0`
+  - active PATH nvm shims also updated:
+    - `~/.nvm/versions/node/v22.22.2/bin/gena.bin` -> `gena 0.128.0`
+    - `~/.nvm/versions/node/v22.22.2/bin/gena-tui.bin` -> `gena-tui 0.128.0`
 - Release artifacts для `0.128.0` пока НЕ собраны.
 - Installer для `0.128.0` пока НЕ готов.
 - В `codex-rs/dist` всё ещё лежат старые `0.125.0` artifacts:
@@ -63,10 +69,14 @@
     - `target/debug/gena-tui --version` -> `gena-tui 0.128.0`
     - `target/debug/gena --help` -> `Gena CLI`, `Usage: gena ...`
     - `target/debug/gena plugin --help` -> `Usage: gena plugin ...`
+- Для установленной debug-сборки:
+  - `gena --version` -> `gena 0.128.0`
+  - `gena-tui --version` -> `gena-tui 0.128.0`
+  - `gena-debug --version` -> `gena 0.128.0`
+  - `gena --help` -> `Gena CLI`, `Usage: gena ...`
 
 ## Open Bugs / Risks
 - Release installer `0.128.0` not built yet.
-- Installed `/opt/homebrew/bin/gena*` may still point to older binaries until explicit install step.
 - Manual TUI smoke through installed debug binary is still not confirmed for `0.128.0`.
 - Pre-existing runtime issues still need separate decision:
   - `gena-debug exec` missing env when only sidecar token exists.
@@ -75,4 +85,4 @@
   - local `codex-tui` full test needs `RUST_MIN_STACK=16777216`; default stack overflows one test locally.
 
 ## Next Step
-Build and install `0.128.0` debug explicitly, run real LLMOps smoke and manual TUI smoke, then build `gena-v0.128.0-macos-arm64` release package/installer only after debug green path.
+Run real LLMOps smoke and manual TUI smoke on installed `0.128.0` debug, then build `gena-v0.128.0-macos-arm64` release package/installer only after debug green path.
