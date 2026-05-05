@@ -1,5 +1,77 @@
 # WORKLOG
 
+## 2026-05-05 — Upstream `rust-v0.128.0` merge, branding bugfix, debug build status
+- Завершён upstream update:
+  - merged tag `rust-v0.128.0`
+  - commit: `4303eb9c24` — `Merge tag 'rust-v0.128.0'`
+  - pushed to `origin/main`
+- После merge подтверждено:
+  - Rust workspace version is `0.128.0`
+  - branch `main` synced with `origin/main`
+  - no unresolved conflicts
+- В ходе проверки build artifacts найден новый branding regression после upstream merge:
+  - `target/debug/gena --version` печатал `codex-cli 0.128.0`
+  - `target/debug/gena-tui --version` печатал `codex-tui 0.128.0`
+  - `target/debug/gena --help` показывал `Codex CLI`
+  - top-level usage был `codex [OPTIONS] ...`, а не `gena [OPTIONS] ...`
+  - `gena plugin --help` показывал `Usage: codex plugin ...`
+  - update/debug/auth/runtime messages всё ещё содержали hardcoded `Codex` / `codex`
+- Root cause:
+  - `gena` and `gena-tui` are bin targets inside upstream-shaped packages `codex-cli` / `codex-tui`.
+  - clap `version` and default command name used package metadata or hardcoded `codex`.
+  - `cli/src/main.rs` still had hardcoded `bin_name = "codex"` and `override_usage = "codex ..."`
+- Fix implemented and pushed:
+  - commit: `58d464d38e` — `fix(gena): brand cli help and version output`
+  - top-level clap command now uses `ProductBrand::detect_current()`
+  - `gena` now reports:
+    - `gena 0.128.0`
+    - `Gena CLI`
+    - `Usage: gena [OPTIONS] [PROMPT]`
+  - `gena-tui` now reports:
+    - `gena-tui 0.128.0`
+    - `Usage: gena-tui [OPTIONS] [PROMPT]`
+  - `gena plugin --help` now reports:
+    - `Usage: gena plugin [OPTIONS] <COMMAND>`
+  - removed user-facing hardcoded `Codex` from update/debug/auth/dumb-terminal messages where it affected Gena.
+- Files changed in branding fix:
+  - `codex-rs/cli/src/main.rs`
+  - `codex-rs/tui/src/main.rs`
+  - `codex-rs/gena-runtime/src/auth.rs`
+  - `codex-rs/gena-runtime/src/interaction.rs`
+  - `codex-rs/cli/src/mcp_cmd.rs` (clippy auto-fix only)
+- Checks for upstream merge:
+  - `just fmt` PASS
+  - `git diff --check` PASS
+  - `cargo test -p codex-config -p codex-models-manager -p codex-model-provider -p gena-runtime -p gena-upstream-adapter` PASS
+  - `cargo test -p codex-core` PASS after exact rerun of one flaky timeouted test
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-tui` PASS
+  - `cargo insta pending-snapshots --manifest-path tui/Cargo.toml` -> no pending snapshots
+  - `just write-config-schema` PASS
+  - `just bazel-lock-update` PASS
+  - `just bazel-lock-check` PASS
+  - scoped `just fix` PASS with pre-existing warnings
+- Checks for branding fix:
+  - `cargo test -p codex-cli top_level_` PASS
+  - `cargo test -p codex-tui top_level_` PASS
+  - `cargo test -p gena-runtime` PASS
+  - `just fix -p codex-cli -p codex-tui` PASS
+  - `just fmt` PASS
+  - `cargo build -p codex-cli --bin gena -p codex-tui --bin gena-tui -j1` PASS
+  - `git diff --check` PASS
+- Debug build status:
+  - `codex-rs/target/debug/gena` exists and reports `gena 0.128.0`
+  - `codex-rs/target/debug/gena-tui` exists and reports `gena-tui 0.128.0`
+  - debug binaries were not installed into `/opt/homebrew/bin` during this step
+- Release/install status:
+  - `0.128.0` release package not built yet
+  - `0.128.0` installer not ready
+  - `codex-rs/dist` still contains old `0.125.0` package/installer artifacts
+- Open bugs / risks carried forward:
+  - manual TUI smoke on installed debug binary is still pending
+  - sidecar-only token path for `gena-debug exec` still needs a decision/fix if env token remains required
+  - nonfatal `failed to record rollout items: thread ... not found` after successful debug exec still needs investigation
+  - full local `codex-tui` tests need `RUST_MIN_STACK=16777216` to avoid one stack-overflowing test
+
 ## 2026-05-04 — Chat Completions text+tool-call end_turn hotfix and release rebuild
 - Продолжена работа из состояния после `bd164e1e1`.
 - В рабочем дереве `gena-rs-project` найден и оставлен как текущий hotfix новый bug:

@@ -5,6 +5,8 @@ Applies from: `gena 0.125.0`
 
 Этот документ фиксирует обязательный алгоритм upstream/update работы для `gena-rs`: сначала debug-сборка и Gena-specific проверки, затем только release. Codex upstream tests остаются обязательными, но не считаются достаточными для Gena.
 
+Last updated: 2026-05-05 after `rust-v0.128.0` branding regression.
+
 ## Цель
 
 Не пропускать regression bugs, найденные на `0.125.0`:
@@ -16,6 +18,11 @@ Applies from: `gena 0.125.0`
 - Chat Completions turn завершается после фразы вида `Посмотрим ...:` без следующего tool call.
 - `CODEX_HOME` / sidecar token path не создан или не используется.
 - Release installer переустанавливает старое состояние до полного smoke-check.
+- Gena branding leaks after upstream merge:
+  - `gena --version` prints `codex-cli ...`.
+  - `gena-tui --version` prints `codex-tui ...`.
+  - `gena --help` shows `Codex CLI` or `Usage: codex ...`.
+  - subcommand help shows `Usage: codex ...` for Gena entrypoints.
 
 ## Основное правило
 
@@ -151,6 +158,47 @@ Release build запрещён, пока не пройдены:
 - token persistence в sidecar.
 - `/model` picker видит full catalog и current model одновременно.
 - выбор модели не ломает следующий turn.
+
+### Branding Gate
+
+Цель: не выпускать Gena artifacts, которые выглядят как upstream `codex` в user-visible entrypoints.
+
+Обязательные тесты:
+
+- `cargo test -p codex-cli top_level_`
+- `cargo test -p codex-tui top_level_`
+
+Обязательные live checks после debug build:
+
+```bash
+target/debug/gena --version
+target/debug/gena-tui --version
+target/debug/gena --help | sed -n '1,28p'
+target/debug/gena plugin --help | sed -n '1,12p'
+target/debug/gena-tui --help | sed -n '1,10p'
+```
+
+Ожидаемый результат:
+
+- `gena --version` -> `gena <current-version>`
+- `gena-tui --version` -> `gena-tui <current-version>`
+- `gena --help` starts with `Gena CLI`
+- `gena --help` contains `Usage: gena [OPTIONS] [PROMPT]`
+- `gena plugin --help` contains `Usage: gena plugin [OPTIONS] <COMMAND>`
+- `gena-tui --help` contains `Usage: gena-tui [OPTIONS] [PROMPT]`
+
+Не блокируют release сами по себе:
+
+- internal Rust package/crate names like `codex-cli` / `codex-tui`
+- internal type names like `CodexAuth`
+- upstream docs/tests that explicitly test Codex behavior
+
+Блокируют release:
+
+- any Gena entrypoint printing `codex-cli` / `codex-tui` as its version name
+- top-level Gena help showing `Codex CLI`
+- top-level Gena usage showing `codex`
+- installer README recommending `gena-tui` as primary command instead of `gena`
 
 ## Debug Build Gate
 
