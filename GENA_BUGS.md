@@ -6,7 +6,7 @@
 
 - Каждый баг должен иметь статус: `open`, `fixed`, `needs decision`, `obsolete`.
 - Указывать версию, где баг найден, и версию/commit, где он исправлен.
-- Если баг найден на debug, release/installer нельзя считать готовым, пока он не отражён здесь и в [[GENA_UPSTREAM_DEBUG_TEST_GATE]] при необходимости.
+- Если баг найден на debug, release/installer нельзя считать готовым, пока он не отражён здесь и в [[GENA_UPSTREAM_UPDATE]] при необходимости.
 - Internal upstream names (`codex-*` crate/type names) сами по себе не баг. Багом считается user-visible leak в `gena` entrypoints, installer, docs, runtime errors или UI.
 
 ## Краткая Таблица
@@ -421,7 +421,7 @@ Symptom:
 
 Fix:
 - Rebuilt release artifacts after fixes.
-- [[GENA_UPSTREAM_DEBUG_TEST_GATE]] now explicitly blocks release/installer before debug green path.
+- [[GENA_UPSTREAM_UPDATE]] now explicitly blocks release/installer before debug green path.
 - Obsidian `NOW.md` must record artifact versions and mtimes.
 
 Fixed in:

@@ -10,7 +10,7 @@
 - [[IDEA]] — архитектурная идея и принципы
 - [[GENA_REPO_STRUCTURE]] — целевая архитектура форка `codex-rs` / `gena-rs`
 - [[PROCESS]] — стандарт работы
-- [[GENA_UPSTREAM_DEBUG_TEST_GATE]] — обязательный upstream/debug/test gate для Gena
+- [[GENA_UPSTREAM_UPDATE]] — практический алгоритм upstream update: merge, конфликты, баги, тесты, сборка
 
 ## Ссылки на Project Code
 - macOS/Desktop: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`

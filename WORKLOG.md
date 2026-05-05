@@ -1,5 +1,27 @@
 # WORKLOG
 
+## 2026-05-05 — Rename upstream gate into practical update playbook
+- `GENA_UPSTREAM_DEBUG_TEST_GATE.md` переименован в `GENA_UPSTREAM_UPDATE.md`.
+- Назначение документа расширено:
+  - не только debug/test gate;
+  - теперь это практический алгоритм upstream update.
+- Новый документ покрывает:
+  - preflight status и disk check;
+  - выбор upstream release tag;
+  - merge algorithm;
+  - conflict fixing policy;
+  - Gena-sensitive зоны после merge;
+  - generated files / lock/schema refresh;
+  - Codex mandatory checks;
+  - Gena bug gates;
+  - debug build/install;
+  - real LLMOps smoke;
+  - manual TUI smoke;
+  - commit/push policy;
+  - release package/installer build;
+  - Obsidian sync.
+- `INDEX.md` и [[GENA_BUGS]] обновлены на новую wiki-ссылку `[[GENA_UPSTREAM_UPDATE]]`.
+
 ## 2026-05-05 — Upstream `rust-v0.128.0` merge, branding bugfix, debug build status
 - Завершён upstream update:
   - merged tag `rust-v0.128.0`
@@ -118,7 +140,7 @@
 
 ## 2026-05-02
 - Зафиксирован отдельный обязательный upstream/debug/test gate для `gena-rs`:
-  - `GENA_UPSTREAM_DEBUG_TEST_GATE.md`
+  - `GENA_UPSTREAM_UPDATE.md` (ранее `GENA_UPSTREAM_DEBUG_TEST_GATE.md`)
 - Документ вводит правило:
   - Codex mandatory checks обязательны, но недостаточны для Gena.
   - Release build запрещён до debug green path на реальном LLMOps/TUI сценарии.
