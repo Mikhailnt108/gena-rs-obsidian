@@ -10,9 +10,10 @@
 - Последние ключевые commits:
   - `4303eb9c24` — `Merge tag 'rust-v0.128.0'`
   - `58d464d38e` — `fix(gena): brand cli help and version output`
+  - `c79ac7c704` — `fix(gena): restore tui provider token onboarding`
 - Upstream update до `rust-v0.128.0` завершён и запушен.
 - Rust workspace version: `0.128.0`.
-- Рабочее дерево кода после branding fix clean.
+- Рабочее дерево кода clean после `gena-debug` token prompt regression fix.
 
 ## Built Artifacts
 - Debug binaries собраны локально:
@@ -20,7 +21,7 @@
   - `codex-rs/target/debug/gena-tui` -> `gena-tui 0.128.0`
 - Debug binaries установлены:
   - `/opt/homebrew/bin/gena-debug.bin` -> `gena 0.128.0`
-  - `/opt/homebrew/bin/gena.bin` -> hardlink на `/opt/homebrew/bin/gena-debug.bin`
+  - `/opt/homebrew/bin/gena.bin` -> `gena 0.128.0`
   - `/opt/homebrew/bin/gena-tui.bin` -> `gena-tui 0.128.0`
   - active PATH nvm shims also updated:
     - `~/.nvm/versions/node/v22.22.2/bin/gena.bin` -> `gena 0.128.0`
@@ -44,6 +45,12 @@
   - `gena` получает `Gena CLI`, `Usage: gena ...`, `gena 0.128.0`.
   - `gena-tui` получает `Usage: gena-tui ...`, `gena-tui 0.128.0`.
   - update messages, debug-build update error, auth error and dumb-terminal warning больше не hardcode-ят `codex`.
+- `gena-debug` TUI token prompt regression:
+  - before fix: first request failed with `Missing environment variable: LLMOPS_TOKEN`.
+  - restored startup call to `prepare_runtime_provider_token()` after `Config` load.
+  - sidecar token path is loaded before the first request; otherwise interactive TUI prompts for token.
+  - non-interactive startup now fails early with provider-specific message instead of later request failure.
+  - TUI session/status headers now use current product brand and should render `Gena` for `gena-debug`.
 
 ## Checks Completed
 - Для upstream merge:
@@ -74,6 +81,16 @@
   - `gena-tui --version` -> `gena-tui 0.128.0`
   - `gena-debug --version` -> `gena 0.128.0`
   - `gena --help` -> `Gena CLI`, `Usage: gena ...`
+- Для `gena-debug` token prompt fix:
+  - `cargo test -p gena-types detects_brands_from_program_stem` PASS.
+  - `cargo test -p codex-tui provider_token` PASS for stored-token path.
+  - `cargo test -p codex-tui prompt_for_missing_provider_env_key_loads_sidecar_token` PASS.
+  - `just fix -p codex-tui -p gena-types` PASS.
+  - `just fmt` PASS.
+  - `git diff --check` PASS.
+  - `cargo build -p codex-cli --bin gena -p codex-tui --bin gena-tui -j1` PASS.
+  - installed debug binaries refreshed in `/opt/homebrew/bin` and nvm shim dir.
+  - no-token/non-interactive smoke now reports provider-specific `LLMOPS_TOKEN` requirement before TUI request path.
 
 ## Open Bugs / Risks
 - Release installer `0.128.0` not built yet.

@@ -30,6 +30,7 @@
 | GENA-BUG-015 | nonfatal `failed to record rollout items: thread ... not found` | open | `0.125.0` | not fixed |
 | GENA-BUG-016 | release installer может вернуть старый build | fixed by process | `0.120.0` | gate/process |
 | GENA-BUG-017 | `0.128.0` installer отсутствует после upstream merge | open | `0.128.0` | not built |
+| GENA-BUG-018 | `gena-debug` TUI не запускает prompt для `LLMOPS_TOKEN` и падает на первом запросе | fixed | `0.128.0` debug | `0.128.0`, `c79ac7c704` |
 
 ## Bugs
 
@@ -449,6 +450,58 @@ Next:
 
 Fixed in: not fixed.
 
+### GENA-BUG-018 — `gena-debug` TUI не запускает prompt для `LLMOPS_TOKEN` и падает на первом запросе
+
+Status: `fixed`
+
+Found in: `0.128.0` debug after upstream merge.
+
+Symptom:
+- `gena-debug` starts TUI as `OpenAI Codex (v0.128.0)`.
+- First user message fails with:
+  - `Missing environment variable: LLMOPS_TOKEN`
+- Expected behavior for Gena TUI:
+  - load provider token from sidecar when present;
+  - otherwise prompt for `LLMOPS_TOKEN` before first model request;
+  - render product header as `Gena`, not `OpenAI Codex`.
+
+Root cause:
+- During upstream reapply/refactor, TUI stopped calling `prepare_runtime_provider_token()` before startup.
+- The only provider readiness hook left in `run_main()` was `ensure_oss_provider_ready()`, which does not handle LLMOps token onboarding.
+- Session/status header title still had hardcoded `OpenAI Codex`.
+
+Fix:
+- Restored TUI startup token onboarding after `Config` load and before app startup.
+- The onboarding path now:
+  - accepts existing env token;
+  - loads sidecar token from `CODEX_HOME/provider_tokens/<env_key>`;
+  - prompts interactively when no token is available;
+  - fails early with a provider-specific message in non-interactive mode.
+- Session header and status card now use `ProductBrand::detect_current().display_name()`.
+- Added regression coverage for:
+  - `gena-debug.bin` brand detection;
+  - TUI sidecar token load before startup;
+  - empty prompted token rejection.
+
+Verification:
+- `cargo test -p gena-types detects_brands_from_program_stem` PASS.
+- `cargo test -p codex-tui provider_token` PASS for stored-token path.
+- `cargo test -p codex-tui prompt_for_missing_provider_env_key_loads_sidecar_token` PASS.
+- `just fix -p codex-tui -p gena-types` PASS.
+- `just fmt` PASS.
+- `git diff --check` PASS.
+- `cargo build -p codex-cli --bin gena -p codex-tui --bin gena-tui -j1` PASS.
+- Installed debug binaries refreshed:
+  - `/opt/homebrew/bin/gena-debug.bin`
+  - `/opt/homebrew/bin/gena.bin`
+  - `/opt/homebrew/bin/gena-tui.bin`
+  - active nvm shim binaries.
+- Non-interactive smoke with empty temp home and no `LLMOPS_TOKEN` now fails early with:
+  - `Provider llmops requires LLMOPS_TOKEN...`
+
+Fixed in:
+- `0.128.0`, `c79ac7c704`.
+
 ## Release Blocking Checklist
 
 Before any Gena release package/installer:
@@ -460,6 +513,7 @@ Before any Gena release package/installer:
 - [ ] Chat Completions payload keeps first system message valid.
 - [ ] stream event order is valid for TUI.
 - [ ] action preamble without tool call does not prematurely end turn.
+- [x] `gena-debug` TUI provider token onboarding runs before first request.
 - [ ] debug real LLMOps smoke passes.
 - [ ] manual TUI smoke passes.
 - [ ] installer artifacts match current workspace version.
