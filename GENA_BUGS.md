@@ -29,7 +29,7 @@
 | GENA-BUG-014 | `gena-debug exec` требует env token при наличии sidecar token | needs decision | `0.125.0` | not fixed |
 | GENA-BUG-015 | nonfatal `failed to record rollout items: thread ... not found` | open | `0.125.0` | not fixed |
 | GENA-BUG-016 | release installer может вернуть старый build | fixed by process | `0.120.0` | gate/process |
-| GENA-BUG-017 | `0.128.0` installer отсутствует после upstream merge | open | `0.128.0` | not built |
+| GENA-BUG-017 | `0.128.0` installer отсутствует после upstream merge | fixed by process | `0.128.0` | `0.128.0` artifacts, 2026-05-06 |
 | GENA-BUG-018 | `gena-debug` TUI не запускает prompt для `LLMOPS_TOKEN` и падает на первом запросе | fixed | `0.128.0` debug | `0.128.0`, `c79ac7c704` |
 
 ## Bugs
@@ -392,7 +392,7 @@ Fixed in: not fixed.
 
 ### GENA-BUG-015 — nonfatal `failed to record rollout items: thread ... not found`
 
-Status: `open`
+Status: `fixed by process`
 
 Found in: `0.125.0` real debug smoke.
 
@@ -440,15 +440,22 @@ Symptom:
 - `codex-rs/dist` still contains only `0.125.0` macOS arm64 package and installer.
 
 Impact:
-- Users can still accidentally install stale `0.125.0`.
-- `0.128.0` cannot be called release-ready until package and installer are rebuilt and smoke-tested.
+- Users could still accidentally install stale `0.125.0`.
+- `0.128.0` could not be called release-ready until package and installer were rebuilt and smoke-tested.
 
-Next:
-- Install debug `0.128.0` explicitly.
-- Run real LLMOps smoke and manual TUI smoke.
-- Build `gena-v0.128.0-macos-arm64.tar.gz`, `.sha256`, and installer only after debug green path.
+Fix:
+- Installed debug `0.128.0` was verified through real LLMOps exec smoke and manual TUI smoke.
+- Built `gena-v0.128.0-macos-arm64.tar.gz`, `.sha256`, and self-extract installer.
+- Ran installer and verified active PATH binaries.
 
-Fixed in: not fixed.
+Fixed in:
+- `0.128.0` artifacts, `2026-05-06`
+
+Verification:
+- `dist/gena-v0.128.0-macos-arm64/gena --version` -> `gena 0.128.0`
+- `dist/gena-v0.128.0-macos-arm64/gena-tui --version` -> `gena-tui 0.128.0`
+- `gena --version` -> `gena 0.128.0`
+- `gena-tui --version` -> `gena-tui 0.128.0`
 
 ### GENA-BUG-018 — `gena-debug` TUI не запускает prompt для `LLMOPS_TOKEN` и падает на первом запросе
 

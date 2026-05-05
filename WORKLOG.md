@@ -1,5 +1,43 @@
 # WORKLOG
 
+## 2026-05-06 — `0.128.0` release package and installer completed
+- Real LLMOps debug smoke on installed `gena-debug 0.128.0` passed:
+  - `/v1/models` returned HTTP 200, `object=list`, 50 models, `qwen` present.
+  - `gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ... 'Ответь ровно одним словом: OK'` returned `OK`.
+  - tool-loop smoke executed a safe `ls -la /Users/mntabunkov/sandbox` after assistant prelude and completed normally.
+  - smoke logs had no `System message must be at the beginning`, `OutputTextDelta without active item`, `panic`, or `backtrace` markers.
+- Manual TUI smoke on installed `gena-debug 0.128.0` passed:
+  - TUI rendered `>_ Gena (v0.128.0)`.
+  - `/model` opened the model picker with the full LLMOps catalog.
+  - model selection returned to chat with `glm-4.6-357b default`.
+  - a normal `hello` prompt produced an assistant response.
+  - trace log had no critical markers (`System message must be at the beginning`, `OutputTextDelta without active item`, panic/backtrace/400).
+  - non-blocking notes: project trust warning appeared because the project was not trusted in local config; ChatGPT remote plugin sync returned 403/Cloudflare during startup.
+- Release package build:
+  - command: `CARGO_BUILD_JOBS=4 scripts/package-gena-linux-macos.sh release`
+  - main release profile finished in `28m 37s`.
+  - separate `gena` CLI release build finished in `24m 29s`.
+  - warnings observed:
+    - existing multiple-target `main.rs` warnings for `codex-cli` and `codex-tui`
+    - existing `dead_code` warnings in `codex-shell-command` and `codex-app-server`
+    - `unused import: gena_branding::current_cli_command_name` in `cli/src/main.rs`
+- Release artifacts created:
+  - `codex-rs/dist/gena-v0.128.0-macos-arm64.tar.gz` — 140M, `2026-05-06 00:23 MSK`
+  - `codex-rs/dist/gena-v0.128.0-macos-arm64.tar.gz.sha256`
+  - `codex-rs/dist/gena-v0.128.0-macos-arm64-installer.sh` — 187M, `2026-05-06 00:23 MSK`
+- Verification:
+  - package SHA256 matched `.sha256`: `ac63ad942aad6ee60296615babcc571caf721089dccf8ef619d90d44cf3ae613`
+  - `dist/gena-v0.128.0-macos-arm64/gena --version` -> `gena 0.128.0`
+  - `dist/gena-v0.128.0-macos-arm64/gena-tui --version` -> `gena-tui 0.128.0`
+- Installer run:
+  - installed to `~/.nvm/versions/node/v22.22.2/bin`
+  - `which gena` -> `~/.nvm/versions/node/v22.22.2/bin/gena`
+  - `which gena-tui` -> `~/.nvm/versions/node/v22.22.2/bin/gena-tui`
+  - `gena --version` -> `gena 0.128.0`
+  - `gena-tui --version` -> `gena-tui 0.128.0`
+  - installed mtimes: `2026-05-06 00:24 MSK`
+  - `gena --help` starts with `Gena CLI` and `Usage: gena ...`
+
 ## 2026-05-05 — Installed `0.128.0` debug build into terminal entrypoints
 - Локальные debug binaries уже были собраны:
   - `codex-rs/target/debug/gena` -> `gena 0.128.0`

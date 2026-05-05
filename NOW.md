@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Довести `gena` после upstream `rust-v0.128.0` до release package/installer: debug build установлен и проверен, дальше real LLMOps smoke, manual TUI smoke и сборка `0.128.0` artifacts.
+`gena` после upstream `rust-v0.128.0` доведён до release package/installer. Текущий следующий шаг: пользоваться установленным `0.128.0` release и отдельно принять решение по оставшимся runtime risks.
 
 ## State
 - Кодовый репозиторий: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -27,8 +27,19 @@
   - active PATH nvm shims also updated:
     - `~/.nvm/versions/node/v22.22.2/bin/gena.bin` -> `gena 0.128.0`
     - `~/.nvm/versions/node/v22.22.2/bin/gena-tui.bin` -> `gena-tui 0.128.0`
-- Release artifacts для `0.128.0` пока НЕ собраны.
-- Installer для `0.128.0` пока НЕ готов.
+- Release artifacts для `0.128.0` собраны:
+  - `codex-rs/dist/gena-v0.128.0-macos-arm64.tar.gz` — 140M, `2026-05-06 00:23 MSK`
+  - `codex-rs/dist/gena-v0.128.0-macos-arm64.tar.gz.sha256`
+  - `codex-rs/dist/gena-v0.128.0-macos-arm64-installer.sh` — 187M, `2026-05-06 00:23 MSK`
+- Package contents:
+  - `dist/gena-v0.128.0-macos-arm64/gena` -> `gena 0.128.0`
+  - `dist/gena-v0.128.0-macos-arm64/gena-tui` -> `gena-tui 0.128.0`
+- SHA256:
+  - `ac63ad942aad6ee60296615babcc571caf721089dccf8ef619d90d44cf3ae613`
+- Release installer установлен в active PATH:
+  - `~/.nvm/versions/node/v22.22.2/bin/gena` -> `gena 0.128.0`
+  - `~/.nvm/versions/node/v22.22.2/bin/gena-tui` -> `gena-tui 0.128.0`
+  - installed mtimes: `2026-05-06 00:24 MSK`
 - В `codex-rs/dist` всё ещё лежат старые `0.125.0` artifacts:
   - `gena-v0.125.0-macos-arm64.tar.gz`
   - `gena-v0.125.0-macos-arm64.tar.gz.sha256`
@@ -94,8 +105,6 @@
   - no-token/non-interactive smoke now reports provider-specific `LLMOPS_TOKEN` requirement before TUI request path.
 
 ## Open Bugs / Risks
-- Release installer `0.128.0` not built yet.
-- Manual TUI smoke through installed debug binary is still not confirmed for `0.128.0`.
 - Pre-existing runtime issues still need separate decision:
   - `gena-debug exec` missing env when only sidecar token exists.
   - nonfatal `failed to record rollout items: thread ... not found` after successful `gena-debug exec`.
@@ -103,4 +112,4 @@
   - local `codex-tui` full test needs `RUST_MIN_STACK=16777216`; default stack overflows one test locally.
 
 ## Next Step
-Run real LLMOps smoke and manual TUI smoke on installed `0.128.0` debug, then build `gena-v0.128.0-macos-arm64` release package/installer only after debug green path.
+Use installed `0.128.0` release. Separately decide whether to fix or document `gena-debug exec` sidecar-only token behavior and investigate the nonfatal rollout-items warning.
