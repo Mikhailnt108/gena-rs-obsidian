@@ -14,6 +14,7 @@
 - Upstream update до `rust-v0.128.0` завершён и запушен.
 - Rust workspace version: `0.128.0`.
 - Рабочее дерево кода clean после `gena-debug` token prompt regression fix.
+- Agent entrypoint consolidated: `AGENTS.md` is now the single required startup file; old `AGENT_BOOT.md` was removed.
 
 ## Built Artifacts
 - Debug binaries собраны локально:

@@ -133,7 +133,7 @@ end session
 
 ---
 
-6. AGENT_BOOT.md — ТОЧКА ВХОДА АГЕНТА
+6. AGENTS.md — ТОЧКА ВХОДА АГЕНТА
 
 Где: Project Code repository
 

@@ -77,7 +77,7 @@ WORKLOG.md
 
 В Project Code
 
-AGENT_BOOT.md
+AGENTS.md
 
 
 Если документ отсутствует — он должен быть создан.
@@ -91,7 +91,7 @@ AGENT_BOOT.md
 
 Шаги
 
-1. Агент читает AGENT_BOOT.md
+1. Агент читает AGENTS.md
 
 
 2. Агент читает NOW.md

@@ -3576,3 +3576,17 @@
   - Smoke was stopped because the model launched a heavy `du -ah /System/Volumes/Data` scan.
 - Release:
   - not rebuilt intentionally; debug green path is still the gate before release.
+
+## 2026-05-05 — Consolidate agent bootstrap into AGENTS.md
+- По пользовательскому запросу `AGENT_BOOT.md` больше не является отдельной точкой входа.
+- В `gena-rs-project`:
+  - `AGENTS.md` очищен от старого Rust-only содержания и заменён bootstrap-инструкцией из `AGENT_BOOT.md`.
+  - `AGENTS.md` теперь прямо требует читать Obsidian `NOW.md` и `PROCESS.md` на старте.
+  - добавлен macOS/Desktop путь к code repo и Obsidian files.
+  - `AGENT_BOOT.md` удалён.
+- В Obsidian:
+  - `PROCESS.md` обновлён: обязательный Project Code документ теперь `AGENTS.md`.
+  - `CoreDocumentsStandard.md` обновлён: точка входа агента теперь `AGENTS.md`.
+  - `NOW.md` отражает consolidation state.
+- Практический эффект:
+  - новая сессия должна начинаться с `AGENTS.md`, затем Obsidian `NOW.md` / `PROCESS.md`, без отдельного `AGENT_BOOT.md`.
