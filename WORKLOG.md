@@ -1,5 +1,22 @@
 # WORKLOG
 
+## 2026-05-11 — Chat Completions adapter roadmap extracted
+- Проанализирован task-файл:
+  - `TASKS/CODEX_CHAT_COMPLETIONS_COMPAT_ADAPTER.md`
+- `ROADMAP.md` очищен от старого концептуального roadmap и заменён рабочим списком задач по реализации Chat Completions compatibility adapter.
+- Roadmap разбит на фазы:
+  - baseline discovery;
+  - `wire_api` routing;
+  - adapter skeleton;
+  - input mapping;
+  - tool schema mapping;
+  - output mapping;
+  - usage/end_turn;
+  - reasoning downgrade;
+  - mock integration tests;
+  - validation.
+- Кодовый репозиторий не изменялся.
+
 ## 2026-05-06 — `0.128.0` release package and installer completed
 - Real LLMOps debug smoke on installed `gena-debug 0.128.0` passed:
   - `/v1/models` returned HTTP 200, `object=list`, 50 models, `qwen` present.
