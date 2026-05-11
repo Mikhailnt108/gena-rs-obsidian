@@ -7,6 +7,7 @@
 - Кодовый репозиторий: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Ветка кода: `chore/upstream-rust-v0.130.0`, запушена в `origin/chore/upstream-rust-v0.130.0`.
+- Draft PR: https://github.com/Mikhailnt108/gena-rs-project/pull/1
 - Upstream tag: `rust-v0.130.0`.
 - Merge commit: `3615ed38f4` (`Merge tag 'rust-v0.130.0'`).
 - Сохранены Gena-specific изменения:
@@ -26,4 +27,4 @@
 - Нет.
 
 ## Next Step
-Создать PR из `chore/upstream-rust-v0.130.0` в `main`, дождаться CI/review. После merge вернуться к `ROADMAP.md` и продолжить Chat Completions adapter work.
+Дождаться CI/review по PR #1. После merge вернуться к `ROADMAP.md` и продолжить Chat Completions adapter work.
