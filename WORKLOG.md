@@ -3645,3 +3645,50 @@
   - `NOW.md` отражает consolidation state.
 - Практический эффект:
   - новая сессия должна начинаться с `AGENTS.md`, затем Obsidian `NOW.md` / `PROCESS.md`, без отдельного `AGENT_BOOT.md`.
+
+## 2026-05-11 — Upstream update to rust-v0.130.0
+- Пользователь прервал work по `ROADMAP.md` и попросил сначала обновить upstream до `0.130.0`.
+- Создана code branch:
+  - `chore/upstream-rust-v0.130.0`
+- Смержен upstream tag:
+  - `rust-v0.130.0`
+  - merge commit: `3615ed38f4` — `Merge tag 'rust-v0.130.0'`
+- Conflict resolution:
+  - сохранен Gena `AGENTS.md`;
+  - сохранены fork-удаления `.github/workflows/*`;
+  - сохранен Gena CLI/TUI branding;
+  - адаптирован Chat Completions path к upstream session/thread headers и request shape;
+  - адаптирован `gena-runtime` к upstream `state_db`, `thread_store`, `ThreadManager` API;
+  - добавлены upstream `service_tiers` поля в Gena/OpenAI-compatible model info parsing;
+  - обновлен `Cargo.lock` от upstream tag и затем минимально пересобран workspace lock.
+- Disk cleanup:
+  - во время `codex-tui` test link диск заполнился (`No space left on device`);
+  - по разрешению пользователя удалены `codex-rs/target` и старые `0.125.0` release artifacts из `codex-rs/dist`;
+  - после cleanup было около 76G свободно, после пересборки осталось около 46G.
+- Проверки:
+  - `cargo check -p codex-core -p codex-cli -p codex-tui -p codex-shell-command` PASS;
+  - `just fmt` PASS;
+  - `just bazel-lock-update` PASS;
+  - `just bazel-lock-check` PASS;
+  - `cargo test -p codex-cli top_level_` PASS;
+  - `cargo test -p codex-tui top_level_` PASS;
+  - `cargo test -p gena-runtime gena_model_list_keeps_full_llmops_catalog_when_current_model_is_configured` PASS;
+  - `cargo test -p codex-api parses_openai_compatible_models_response` PASS;
+  - `cargo test -p codex-api parses_models_response` PASS;
+  - `cargo test -p gena-runtime startup_model_tests` PASS;
+  - `cargo test -p codex-core chat_completions_text_before_tool_call_runs_tool_loop_to_completion` PASS;
+  - `cargo test -p codex-api 'endpoint::chat_completions::tests'` PASS;
+  - `cargo test -p codex-tui store_prompted_provider_token --lib` PASS;
+  - `just fix -p codex-api -p codex-models-manager -p codex-model-provider -p codex-core -p codex-cli -p codex-tui -p gena-runtime -p codex-shell-command` PASS;
+  - `cargo build -p codex-cli --bin gena -p codex-tui --bin gena-tui` PASS.
+- Live smoke:
+  - `target/debug/gena --version` -> `gena 0.130.0`;
+  - `target/debug/gena-tui --version` -> `gena-tui 0.130.0`;
+  - `target/debug/gena --help` keeps `Gena CLI` and includes upstream `remote-control`;
+  - `target/debug/gena plugin --help` shows Gena command path;
+  - `target/debug/gena-tui --help` shows `gena-tui`.
+- Notes:
+  - full `cargo test` was not run because user did not explicitly authorize it;
+  - `git diff --cached --check` reports upstream trailing whitespace in `.snap` and `patches/v8_*` payload; left unchanged.
+- Branch pushed:
+  - `origin/chore/upstream-rust-v0.130.0`

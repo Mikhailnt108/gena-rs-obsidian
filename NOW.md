@@ -1,19 +1,29 @@
 # NOW
 
 ## Current Goal
-Реализовать Chat Completions compatibility adapter для Responses-native agent loop в Gena CLI.
+Подготовить upstream update Gena до `rust-v0.130.0`.
 
 ## State
 - Кодовый репозиторий: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
-- Ветка кода: `main`, синхронизирована с `origin/main`.
-- Ветка Obsidian: `main`, синхронизирована с `origin/main` до начала изменений roadmap.
-- Источник задачи: `TASKS/CODEX_CHAT_COMPLETIONS_COMPAT_ADAPTER.md`.
-- Рабочий roadmap очищен и переписан в `ROADMAP.md`.
-- Ключевой принцип: Chat Completions должен быть compatibility adapter, а не отдельный agent loop.
+- Ветка кода: `chore/upstream-rust-v0.130.0`, запушена в `origin/chore/upstream-rust-v0.130.0`.
+- Upstream tag: `rust-v0.130.0`.
+- Merge commit: `3615ed38f4` (`Merge tag 'rust-v0.130.0'`).
+- Сохранены Gena-specific изменения:
+  - Gena `AGENTS.md`;
+  - удаленные fork workflows;
+  - CLI/TUI Gena branding;
+  - LLMOps/runtime provider token onboarding;
+  - Chat Completions compatibility adapter behavior.
+- Диск был заполнен во время test link; очищено:
+  - `codex-rs/target`;
+  - старые `codex-rs/dist/gena-v0.125.0-macos-arm64*` artifacts.
+- После пересборки осталось около 46G свободно на `/System/Volumes/Data`; новый `codex-rs/target` около 30G.
+- `git diff --check` по unstaged ручным правкам чистый.
+- `git diff --cached --check` показывает trailing whitespace в upstream snapshot/patch content (`.snap`, `patches/v8_*`), не исправлялось, чтобы не менять snapshot/patch payload.
 
 ## Blockers
 - Нет.
 
 ## Next Step
-Начать Phase 0 из `ROADMAP.md`: baseline discovery текущего `wire_api` routing, Responses stream path и существующих `ResponseItem`/`ResponseEvent`/`TokenUsage` типов.
+Создать PR из `chore/upstream-rust-v0.130.0` в `main`, дождаться CI/review. После merge вернуться к `ROADMAP.md` и продолжить Chat Completions adapter work.

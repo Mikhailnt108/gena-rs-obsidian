@@ -4020,3 +4020,24 @@
 - Строго остановиться до ручного TUI smoke.
 - Не собирать release до отдельного commit.
 - Собирать только debug и оставить release на следующую сессию.
+
+## 2026-05-11 — Upstream rust-v0.130.0 обновлять через отдельную ветку
+**Решение:**
+- Делать update до `rust-v0.130.0` в branch `chore/upstream-rust-v0.130.0`, а не напрямую в `main`.
+- Запушить branch и затем открывать PR в `main`.
+
+**Причина:**
+- Merge крупный: upstream меняет много crates, snapshots, app-server schema, lockfiles и tooling.
+- Нужны CI/review gates до попадания в `main`.
+- Так проще отделить upstream merge risk от следующей работы по `ROADMAP.md`.
+
+**Подтверждение:**
+- Code branch pushed:
+  - `origin/chore/upstream-rust-v0.130.0`
+- Merge commit:
+  - `3615ed38f4` — `Merge tag 'rust-v0.130.0'`
+
+**Альтернативы:**
+- Merge напрямую в `main`.
+- Делать cherry-pick subset вместо tag merge.
+- Остановиться на `0.128.0` и сначала продолжить Chat Completions roadmap.
