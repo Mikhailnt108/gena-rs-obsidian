@@ -1,5 +1,31 @@
 # WORKLOG
 
+## 2026-05-12 — Upstream 0.130.0 targeted core fixes and interrupted full test rerun
+- Продолжена подготовка branch `chore/upstream-rust-v0.130.0`.
+- Пользователь изменил delivery policy:
+  - PR не делать;
+  - после green gate мержить ветку напрямую в `main` и пушить `main`.
+- Исправлены оставшиеся deterministic failures из `codex-core --test all`:
+  - macOS `openpty` test теперь допускает `DARWIN_USER_TEMP_DIR` warning от system Python;
+  - prompt caching tests ожидают `/bin/sh` test shell вместо default user shell;
+  - request permissions + apply_patch test больше не ждёт лишний guardian retry response.
+- Проверки:
+  - `just fmt` PASS;
+  - `just fix -p codex-core` PASS, с прежним `expect_used` warning в `core/tests/suite/shell_command.rs`;
+  - targeted reruns for `openpty`, `prompt_caching`, and `request_permissions_tool` PASS with `RUST_MIN_STACK=16777216`.
+- Запущен full workspace rerun:
+  - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast`
+  - пользователь попросил прерваться до завершения;
+  - процесс остановлен во время поздней `codex-tui` части.
+- Наблюдавшиеся failures до остановки:
+  - `codex-app-server --lib`: tracing span test;
+  - `codex-app-server --test all`: 2 async/realtime/command notification tests;
+  - `codex-core --lib`: 1 execve permission hook timeout;
+  - `codex-core --test all`: 2 failures (`abort_tasks`, subagent execpolicy amendment);
+  - `codex-tui --lib`: 16 snapshot failures, mostly `v0.128.0` -> `v0.130.0`.
+- Test-generated `.snap.new` artifacts from interrupted run were removed from working tree.
+- Merge to `main` intentionally not performed because full gate is not green.
+
 ## 2026-05-11 — Chat Completions adapter roadmap extracted
 - Проанализирован task-файл:
   - `TASKS/CODEX_CHAT_COMPLETIONS_COMPAT_ADAPTER.md`
