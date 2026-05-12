@@ -3694,3 +3694,55 @@
   - `origin/chore/upstream-rust-v0.130.0`
 - Draft PR opened:
   - https://github.com/Mikhailnt108/gena-rs-project/pull/1
+
+## 2026-05-12 — Full cargo test sweep for rust-v0.130.0 branch
+- Пользователь явно разрешил full `cargo test` и уточнил, что нужно прогнать и Codex, и Gena tests.
+- Запущен полный workspace command из `codex-rs`:
+  - `CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast`
+- Что входит:
+  - все workspace crates из `codex-rs/Cargo.toml`;
+  - все `codex-*` и `gena-*` packages;
+  - lib/bin/integration/doc-test targets, где они есть.
+- Gena-specific crates прошли:
+  - `gena-branding`: 3 passed;
+  - `gena-config`: 6 passed;
+  - `gena-plugin-api`: 2 passed;
+  - `gena-plugins-core`: 1 passed;
+  - `gena-runtime`: 40 passed;
+  - `gena-types`: 1 passed;
+  - `gena-upstream-adapter`: 1 passed.
+- Initial full workspace failures:
+  - `codex-app-server --test all`;
+  - `codex-core --lib`;
+  - `codex-core --test all`;
+  - `codex-mcp-server --test all`;
+  - `codex-network-proxy --lib`;
+  - `codex-shell-command --lib`;
+  - `codex-tui --lib`.
+- Fixed deterministic merge/test expectation issues:
+  - restored shell redirect parser test expectation in `codex-rs/shell-command/src/bash.rs`;
+  - removed contradictory duplicate WS/WSS proxy assertions in `codex-rs/network-proxy/src/proxy.rs`;
+  - updated MCP initialize expected version to `CARGO_PKG_VERSION` in `mcp_process.rs`;
+  - exported `CodexToolCallSandboxMode` and stabilized MCP shell approval test with explicit cwd/sandbox and longer timeout.
+- Confirmed targeted PASS:
+  - `just fmt`;
+  - `cargo test -p codex-shell-command bash::tests::parse_shell_lc_single_command_prefix_rejects_non_heredoc_redirects --lib`;
+  - `cargo test -p codex-network-proxy proxy::tests::apply_proxy_env_overrides_uses_plain_http_proxy_url --lib`;
+  - `cargo test -p codex-mcp-server --test all`;
+  - `cargo test -p codex-app-server --test all suite::v2::realtime_conversation::webrtc_v2_tool_call_delegated_turn_can_execute_shell_tool -- --nocapture`;
+  - `cargo test -p codex-app-server --test all suite::v2::turn_start::command_execution_notifications_include_process_id -- --nocapture`.
+- Stack-related reruns:
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-core agent::control::tests::list_agent_subtree_thread_ids_includes_anonymous_and_closed_descendants --lib` PASS;
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-tui tests::fork_last_filters_latest_session_by_cwd_unless_show_all --lib` PASS;
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-core --test all --no-fail-fast` completed without stack overflow.
+- Remaining stable `codex-core --test all` failures:
+  - `suite::exec::openpty_works_under_real_exec_seatbelt_path`;
+  - `suite::prompt_caching::per_turn_overrides_keep_cached_prefix_and_key_constant`;
+  - `suite::prompt_caching::prefixes_context_and_instructions_once_and_consistently_across_requests`;
+  - `suite::prompt_caching::send_user_turn_with_changes_sends_environment_context`;
+  - `suite::prompt_caching::send_user_turn_with_no_changes_does_not_send_environment_context`;
+  - `suite::request_permissions_tool::approved_folder_write_request_permissions_unblocks_later_apply_patch`.
+- Disk cleanup:
+  - full test rebuild filled `/System/Volumes/Data` down to ~305MiB free;
+  - removed `codex-rs/target` per user instruction;
+  - free space recovered to ~73G.

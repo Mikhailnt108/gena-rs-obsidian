@@ -4043,3 +4043,24 @@
 - Merge напрямую в `main`.
 - Делать cherry-pick subset вместо tag merge.
 - Остановиться на `0.128.0` и сначала продолжить Chat Completions roadmap.
+
+## 2026-05-12 — Full workspace test gate после upstream merge
+**Решение:**
+- Для branch `chore/upstream-rust-v0.130.0` считать full test gate не закрытым, пока не разобраны оставшиеся `codex-core --test all` failures.
+- При повторной проверке stack-heavy core/tui targets использовать `RUST_MIN_STACK=16777216` на macOS.
+- При нехватке места удалять `codex-rs/target`, а не продолжать сборку на почти заполненном диске.
+
+**Причина:**
+- Полный `cargo test --workspace --all-targets --no-fail-fast` подтвердил прохождение Gena crates, но выявил стабильные Codex core failures.
+- Часть failures была не регрессией кода, а macOS stack limit; увеличенный `RUST_MIN_STACK` подтвердил это для отдельных core/tui stack-overflow tests.
+- Диск после полного rebuild дошёл до ~305MiB free, что делает дальнейшие проверки ненадёжными.
+
+**Подтверждение:**
+- `gena-*` crates passed in full workspace run.
+- Targeted fixes for shell-command, network-proxy, and mcp-server pass.
+- `RUST_MIN_STACK=16777216 cargo test -p codex-core --test all --no-fail-fast` completed without stack overflow, but left 6 stable failures.
+
+**Альтернативы:**
+- Игнорировать full workspace failures и ждать CI.
+- Сразу чистить `target` перед каждым retry, ценой полной пересборки.
+- Не использовать `RUST_MIN_STACK` и считать stack overflow функциональной регрессией.
