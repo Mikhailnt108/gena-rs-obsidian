@@ -6,21 +6,45 @@
 
 ## Главный архитектурный выбор
 
-Для Gena основное и единственное решение в рамках этой задачи — **internal adapter внутри core**.
+Выбираем **Вариант A — отдельный workspace crate**:
 
-**Shim/proxy не реализовывать.**
+```text
+gena-chat-completions-adapter
+```
+
+Это не внешний runtime-сервис, не shim и не proxy. Это внутренний Rust crate в `codex-rs` workspace.
+
+Целевая структура:
+
+```text
+codex-rs/
+  gena-chat-completions-adapter/
+    Cargo.toml
+    src/
+      lib.rs
+      input_mapping.rs
+      output_mapping.rs
+      tool_mapping.rs
+      usage_mapping.rs
+      stream_emulation.rs
+      tests.rs
+```
+
+Runtime path:
 
 ```text
 Gena Agent Loop
   работает только с ResponseItem / ResponseEvent
         |
         v
-ModelClient
-  ├── ResponsesAdapter
+codex-core / ModelClient
+  ├── Responses path
   │     -> /v1/responses
   │
-  └── ChatCompletionsAdapter
-        -> /v1/chat/completions
+  └── thin WireApi routing
+        -> gena-chat-completions-adapter
+             -> ChatCompletionsClient
+                  -> provider /v1/chat/completions
 ```
 
 Главное правило:
@@ -30,94 +54,17 @@ Agent loop не знает, что под капотом был Chat Completions
 Chat Completions Adapter делает вид, что Chat Completions — это Responses API.
 ```
 
-## Upstream-safe design
+## Почему именно отдельный crate
 
-Так как Gena регулярно обновляет upstream Codex, adapter должен быть реализован так, чтобы после апдейтов upstream не приходилось бесконечно чинить mapping и конфликты.
+Отдельный crate лучше, потому что:
 
-Главный принцип:
-
-```text
-Минимальная точка врезки в upstream-код + изолированный adapter-модуль + contract tests.
-```
-
-Правильная форма:
-
-```text
-upstream-like ModelClient
-  └── маленькая развилка по WireApi
-        ├── existing Responses path untouched
-        └── call into gena-owned adapter module
-```
-
-Неправильная форма:
-
-```text
-размазать Chat Completions mapping по client.rs / loop / tool executor / protocol handling
-```
-
-### Правила upstream-safe реализации
-
-1. `WireApi::Responses` path не менять, кроме минимальной развилки, если это технически необходимо.
-2. В `codex-rs/core/src/client.rs` держать только thin routing layer.
-3. Всю Chat Completions compatibility logic держать в отдельном модуле:
-
-```text
-codex-rs/core/src/chat_completions_adapter.rs
-```
-
-4. Если нужно больше кода, разбить adapter на подмодули:
-
-```text
-chat_completions_adapter/
-  mod.rs
-  input_mapping.rs
-  output_mapping.rs
-  tool_mapping.rs
-  usage_mapping.rs
-  tests.rs
-```
-
-5. Не менять существующий tool executor.
-6. Не менять существующий Responses event loop.
-7. Не менять существующий Responses WebSocket path.
-8. Не добавлять Gena-specific логику в upstream-like участки без необходимости.
-9. Если требуется изменить общий тип (`ChatCompletionsRequestMessage`, `ChatCompletionsOutput`, `ResponseEvent`), изменение должно быть минимальным, generic и покрыто тестами.
-10. Adapter должен зависеть от stable boundary types:
-    - `Prompt`;
-    - `ResponseItem`;
-    - `ResponseEvent`;
-    - `ResponseStream`;
-    - `ToolSpec` / tool schema;
-    - `TokenUsage`.
-11. Не завязывать adapter на внутренние детали конкретного provider, например только `llmops`.
-12. Все mapping-функции должны быть маленькими и покрыты unit tests, чтобы после upstream update сразу видеть, что сломалось.
-
-### Целевой diff после upstream update
-
-После обновления upstream Codex ожидаемый repair surface должен быть таким:
-
-```text
-1. Проверить, что thin WireApi routing в ModelClient ещё компилируется.
-2. Проверить, что adapter entrypoint ещё получает нужные stable boundary types.
-3. Запустить contract tests mapping-функций.
-4. Если upstream поменял ResponseItem/ResponseEvent, чинить только adapter mapping, а не весь loop.
-```
-
-Цель — чтобы upstream update обычно требовал правки только в:
-
-```text
-codex-rs/core/src/chat_completions_adapter*.rs
-```
-
-а не в:
-
-```text
-agent loop
-tool executor
-Responses stream handling
-WebSocket handling
-multiple unrelated upstream files
-```
+- изолирует Gena-specific logic от upstream-like Codex core;
+- снижает количество конфликтов при upstream update;
+- делает границу adapter-а явной;
+- не даёт размазать mapping по `codex-core/src/client.rs`, loop и tool executor;
+- упрощает contract/unit tests;
+- соответствует текущему workspace-направлению, где уже есть `gena-*` crates;
+- позволяет после upstream update чинить adapter boundary, а не весь agent loop.
 
 ## Что НЕ делать
 
@@ -133,32 +80,114 @@ Gena -> fake /v1/responses shim -> provider /v1/chat/completions
 Gena -> external proxy -> provider /v1/chat/completions
 ```
 
-Почему:
+Не делать:
 
-- внешний shim/proxy не видит внутренние `ResponseItem` / `ResponseEvent` так же удобно, как core;
-- внешний shim/proxy хуже понимает tool lifecycle;
-- усложняется отладка agent loop;
-- появляется лишний сетевой слой;
-- сложнее тестировать full loop;
-- выше риск расхождения с upstream Codex;
-- это уводит задачу от нужной архитектуры.
+```text
+отдельный Chat Completions agent loop
+отдельный Chat Completions tool executor
+hardcode только под llmops
+размазывание mapping по client.rs / loop / tool executor
+module fallback вместо отдельного crate
+```
 
-## Почему нужен именно adapter
+## Upstream-safe design
 
-Adapter находится внутри runtime и видит:
+Так как Gena регулярно обновляет upstream Codex, adapter должен быть реализован так, чтобы после апдейтов upstream не приходилось бесконечно чинить mapping и конфликты.
 
-- `ResponseItem`;
-- `ResponseEvent`;
-- `Prompt`;
-- tool definitions;
-- tool results;
-- turn boundary;
-- retries/errors;
-- telemetry;
-- token usage;
-- provider config.
+Главный принцип:
 
-Поэтому adapter может корректно мапить Chat Completions в Responses-style agent loop без отдельного loop и без отдельного tool executor.
+```text
+Минимальная точка врезки в upstream-код + отдельный Gena-owned crate + contract tests.
+```
+
+Правильная форма:
+
+```text
+upstream-like ModelClient
+  └── маленькая развилка по WireApi
+        ├── existing Responses path untouched
+        └── call into gena-chat-completions-adapter
+```
+
+Неправильная форма:
+
+```text
+размазать Chat Completions mapping по client.rs / loop / tool executor / protocol handling
+```
+
+### Правила upstream-safe реализации
+
+1. `WireApi::Responses` path не менять, кроме минимальной развилки, если это технически необходимо.
+2. В `codex-rs/core/src/client.rs` держать только thin routing layer.
+3. Всю Chat Completions compatibility logic держать в `gena-chat-completions-adapter` crate.
+4. Не менять существующий tool executor.
+5. Не менять существующий Responses event loop.
+6. Не менять существующий Responses WebSocket path.
+7. Не добавлять Gena-specific логику в upstream-like участки без необходимости.
+8. Если требуется изменить общий тип (`ChatCompletionsRequestMessage`, `ChatCompletionsOutput`, `ResponseEvent`), изменение должно быть минимальным, generic и покрыто тестами.
+9. Adapter должен зависеть от stable boundary types:
+   - `ResponseItem`;
+   - `ResponseEvent`;
+   - `ResponseStream`;
+   - `ToolSpec` / tool schema;
+   - `TokenUsage`;
+   - минимальный explicit `AdapterInput`, сформированный в `codex-core`.
+10. Не завязывать adapter на внутренние детали конкретного provider, например только `llmops`.
+11. Все mapping-функции должны быть маленькими и покрыты unit tests.
+
+### Целевой diff после upstream update
+
+После обновления upstream Codex ожидаемый repair surface должен быть таким:
+
+```text
+1. Проверить, что thin WireApi routing в ModelClient ещё компилируется.
+2. Проверить, что adapter entrypoint ещё получает нужные stable boundary types.
+3. Запустить contract tests mapping-функций.
+4. Если upstream поменял ResponseItem/ResponseEvent, чинить только adapter mapping, а не весь loop.
+```
+
+Цель — чтобы upstream update обычно требовал правки только в:
+
+```text
+gena-chat-completions-adapter/*
+```
+
+а не в:
+
+```text
+agent loop
+tool executor
+Responses stream handling
+WebSocket handling
+multiple unrelated upstream files
+```
+
+## Что уже есть
+
+В проекте уже есть:
+
+- `WireApi::Responses`;
+- `WireApi::ChatCompletions`;
+- built-in provider `llmops`;
+- env-переключатель `LLMOPS_WIRE_API`;
+- `ChatCompletionsClient`;
+- базовый парсинг:
+  - `content`;
+  - `tool_calls`;
+  - legacy `function_call`;
+  - `usage`.
+
+Ключевые файлы-кандидаты:
+
+```text
+codex-rs/Cargo.toml
+codex-rs/model-provider-info/src/lib.rs
+codex-rs/core/src/client.rs
+codex-rs/gena-chat-completions-adapter/*
+codex-rs/codex-api/src/common.rs
+codex-rs/codex-api/src/endpoint/chat_completions.rs
+codex-rs/core/tests/suite/client.rs
+```
 
 ---
 
@@ -177,18 +206,40 @@ Adapter находится внутри runtime и видит:
    - `codex-rs/codex-api/src/endpoint/chat_completions.rs`.
 5. Найти существующую генерацию tool schema для Responses API и оценить совместимость с Chat Completions.
 6. Проверить, как current loop добавляет tool result обратно в следующий model request.
-7. Зафиксировать upstream-sensitive участки, которые нельзя менять без необходимости:
-   - Responses WebSocket path;
-   - Responses HTTP stream path;
-   - tool executor;
-   - agent loop orchestration.
+7. Определить минимальный `AdapterInput`, который `codex-core` будет передавать в `gena-chat-completions-adapter`, чтобы не раскрывать массово private upstream API.
 
-## Phase 1 — Wire API Routing
+## Phase 1 — Create Crate Boundary
+
+1. Создать workspace crate:
+
+```text
+codex-rs/gena-chat-completions-adapter
+```
+
+2. Добавить его в `codex-rs/Cargo.toml` workspace members.
+3. Добавить его в `[workspace.dependencies]`.
+4. Подключить crate в `codex-core` как dependency.
+5. Создать структуру:
+
+```text
+src/lib.rs
+src/input_mapping.rs
+src/output_mapping.rs
+src/tool_mapping.rs
+src/usage_mapping.rs
+src/stream_emulation.rs
+src/tests.rs
+```
+
+6. Не смешивать adapter mapping с `client.rs`.
+7. Если возникают private API проблемы, решать их через минимальный `AdapterInput` / маленькие wrapper-типы, а не через module fallback.
+
+## Phase 2 — Wire API Routing
 
 1. Добавить явную развилку по `self.state.provider.info().wire_api`.
 2. Оставить существующий path для `WireApi::Responses` без изменения поведения.
 3. Ограничить WebSocket path только `WireApi::Responses`.
-4. Для `WireApi::ChatCompletions` направить выполнение в `ChatCompletionsAdapter` через HTTP unary request.
+4. Для `WireApi::ChatCompletions` направить выполнение в `gena-chat-completions-adapter` через HTTP unary request.
 5. Не добавлять внешний shim/proxy.
 6. Добавить regression coverage, подтверждающую, что Responses path не ушёл в Chat Completions branch.
 7. Держать routing-код максимально тонким: route decision + вызов adapter entrypoint.
@@ -201,48 +252,42 @@ match self.state.provider.info().wire_api {
         // existing Responses path
     }
     WireApi::ChatCompletions => {
-        // ChatCompletionsAdapter path
+        // call gena_chat_completions_adapter
     }
 }
 ```
 
-## Phase 2 — Adapter Skeleton
+## Phase 3 — Adapter Skeleton
 
-1. Создать отдельный модуль adapter:
+Adapter entrypoint должен:
 
-```text
-codex-rs/core/src/chat_completions_adapter.rs
-```
+1. построить `ChatCompletionsRequest`;
+2. вызвать `ChatCompletionsClient::complete`;
+3. преобразовать результат в Responses-style events;
+4. вернуть `ResponseStream`.
 
-2. Adapter должен быть внутренним core-компонентом, а не HTTP shim/proxy.
-3. Реализовать entrypoint уровня:
+Примерная форма:
 
 ```rust
-pub(crate) async fn stream_chat_completions_as_responses(
-    client_setup: CurrentClientSetup,
-    prompt: &Prompt,
-    model_info: &ModelInfo,
-    telemetry: ...,
+pub async fn stream_chat_completions_as_responses(
+    input: AdapterInput,
 ) -> Result<ResponseStream>
 ```
 
-Сигнатуру адаптировать под реальные visibility и текущие структуры.
+Где `AdapterInput` — explicit boundary struct, чтобы не протаскивать через crate много приватных типов.
 
-4. Adapter должен:
-   - построить `ChatCompletionsRequest`;
-   - вызвать `ChatCompletionsClient::complete`;
-   - преобразовать результат в Responses-style events;
-   - вернуть `ResponseStream`.
-5. Для non-stream Chat Completions эмулировать event stream через `mpsc::channel`.
-6. Не делать fake token-by-token streaming; отправлять последовательные semantic events.
-7. Не создавать отдельный agent loop внутри adapter.
-8. Не создавать отдельный tool executor внутри adapter.
-9. Не подтягивать в adapter лишние зависимости от TUI/UI/CLI.
-10. Сделать adapter максимально pure в mapping-частях: input -> output без побочных эффектов, где возможно.
+Требования:
 
-## Phase 3 — Input Mapping
+- для non-stream Chat Completions эмулировать event stream через `mpsc::channel`;
+- не делать fake token-by-token streaming;
+- не создавать отдельный agent loop;
+- не создавать отдельный tool executor;
+- не подтягивать зависимости от TUI/UI/CLI;
+- mapping-функции делать pure, где возможно.
 
-1. Реализовать converter:
+## Phase 4 — Input Mapping
+
+Реализовать converter:
 
 ```rust
 fn responses_input_to_chat_messages(
@@ -251,17 +296,15 @@ fn responses_input_to_chat_messages(
 ) -> Vec<ChatCompletionsRequestMessage>
 ```
 
-2. Mapping minimum:
-   - instructions -> `system`;
-   - user input -> `user`;
-   - assistant text -> `assistant`;
-   - assistant tool call, если нужен для истории -> `assistant` with `tool_calls`;
-   - tool output -> `tool` message with `tool_call_id`.
-3. При необходимости расширить `ChatCompletionsRequestMessage` полями:
-   - `tool_call_id`;
-   - `name`;
-   - `tool_calls`, если текущий формат требует сохранять assistant tool calls в истории.
-4. Сохранить OpenAI-compatible формат tool-result message:
+Mapping minimum:
+
+- instructions -> `system`;
+- user input -> `user`;
+- assistant text -> `assistant`;
+- assistant tool call, если нужен для истории -> `assistant` with `tool_calls`;
+- tool output -> `tool` message with `tool_call_id`.
+
+OpenAI-compatible tool-result message:
 
 ```json
 {
@@ -271,19 +314,14 @@ fn responses_input_to_chat_messages(
 }
 ```
 
-5. Не терять связку:
+Unit tests:
 
-```text
-assistant tool_call id -> tool result tool_call_id
-```
+- instructions + user input -> system + user messages;
+- assistant text ResponseItem -> assistant message;
+- tool output ResponseItem -> role `tool` with `tool_call_id`;
+- tool result сохраняет call id.
 
-6. Добавить unit tests:
-   - instructions + user input -> system + user messages;
-   - assistant text ResponseItem -> assistant message;
-   - tool output ResponseItem -> role `tool` with `tool_call_id`;
-   - tool result сохраняет call id.
-
-## Phase 4 — Tool Schema Mapping
+## Phase 5 — Tool Schema Mapping
 
 1. Переиспользовать существующую генерацию tool schema, если формат совместим.
 2. Если Responses-tools несовместимы с Chat Completions, добавить маленький converter:
@@ -292,7 +330,7 @@ assistant tool_call id -> tool result tool_call_id
 fn responses_tools_to_chat_tools(tools: Vec<Value>) -> Vec<Value>
 ```
 
-3. Целевой формат tool schema:
+Целевой формат:
 
 ```json
 {
@@ -305,13 +343,16 @@ fn responses_tools_to_chat_tools(tools: Vec<Value>) -> Vec<Value>
 }
 ```
 
-4. Не дублировать tool definitions и не менять Responses tool schema.
-5. Не hardcode-ить tools только под `shell` или только под `llmops`.
-6. Добавить unit tests на Chat Completions tool schema format.
+Требования:
 
-## Phase 5 — Output Mapping
+- не дублировать tool definitions;
+- не менять Responses tool schema;
+- не hardcode-ить tools только под `shell` или только под `llmops`;
+- добавить unit tests на Chat Completions tool schema format.
 
-1. Реализовать mapping:
+## Phase 6 — Output Mapping
+
+Реализовать mapping:
 
 ```text
 ChatCompletionsOutput -> ResponseEvent stream
@@ -327,66 +368,66 @@ ResponseEvent::OutputItemDone(...), для каждого tool call item
 ResponseEvent::Completed { ... }
 ```
 
-2. Реализовать mapping:
+Реализовать mapping:
 
 ```text
 ChatCompletionsToolCall -> ResponseItem tool/function call
 ```
 
-3. Сохранять `call_id`, если он есть.
-4. Если `id` отсутствует, генерировать стабильный id вида:
+Требования:
 
-```text
-chatcmpl-call-{index}
-```
+- сохранять `call_id`, если он есть;
+- если `id` отсутствует, генерировать стабильный id `chatcmpl-call-{index}`;
+- передавать `arguments` как JSON string без поломки escaping;
+- если `arguments` невалидный JSON, не падать в adapter;
+- adapter не должен сам выполнять tool call.
 
-5. Передавать `arguments` как JSON string без поломки escaping.
-6. Если `arguments` невалидный JSON, не падать в adapter; передать дальше и дать loop/tool executor обработать ошибку.
-7. Adapter не должен сам выполнять tool call.
-8. Добавить unit tests:
-   - Chat tool call -> ResponseItem tool call;
-   - multiple tool calls -> multiple ResponseItem tool calls;
-   - missing id -> generated stable id;
-   - invalid arguments do not crash adapter.
+Unit tests:
 
-## Phase 6 — Usage And Turn Boundary
+- Chat tool call -> ResponseItem tool call;
+- multiple tool calls -> multiple ResponseItem tool calls;
+- missing id -> generated stable id;
+- invalid arguments do not crash adapter.
 
-1. Реализовать mapping:
+## Phase 7 — Usage And Turn Boundary
+
+Реализовать mapping:
 
 ```text
 ChatCompletionsResponseUsage -> TokenUsage
 ```
 
-2. Заполнять только доступные поля, остальные оставлять default/None.
-3. Передавать usage в `ResponseEvent::Completed`.
-4. Правило `end_turn`:
-   - no tool calls -> `Some(true)`;
-   - has tool calls -> `Some(false)`.
-5. Смысл правила: если модель вернула tool calls, turn ещё не финализирован и agent loop должен продолжить через tool executor.
-6. Добавить unit tests:
-   - usage mapping;
-   - no tool calls -> end_turn true;
-   - has tool calls -> end_turn false.
+Правило `end_turn`:
 
-## Phase 7 — Reasoning Downgrade
+- no tool calls -> `Some(true)`;
+- has tool calls -> `Some(false)`.
 
-1. Для `WireApi::ChatCompletions` не отправлять Responses-only controls:
-   - `reasoning`;
-   - `text.verbosity`, если Chat API не поддерживает;
-   - `include`;
-   - `store`;
-   - `parallel_tool_calls`, если provider может не поддерживать;
-   - Responses WebSocket metadata.
-2. Если в config/model_info задан reasoning effort/summary, adapter не должен падать.
-3. Добавить `tracing::debug!` о graceful downgrade без пользовательского шума:
+Unit tests:
+
+- usage mapping;
+- no tool calls -> end_turn true;
+- has tool calls -> end_turn false.
+
+## Phase 8 — Reasoning Downgrade
+
+Для `WireApi::ChatCompletions` не отправлять Responses-only controls:
+
+- `reasoning`;
+- `text.verbosity`, если Chat API не поддерживает;
+- `include`;
+- `store`;
+- `parallel_tool_calls`, если provider может не поддерживать;
+- Responses WebSocket metadata.
+
+Если в config/model_info задан reasoning effort/summary, adapter не должен падать.
+
+Добавить debug trace:
 
 ```rust
 tracing::debug!("reasoning controls ignored for chat-completions wire api");
 ```
 
-4. Добавить coverage на сценарий с заданным reasoning config в Chat Completions mode.
-
-## Phase 8 — No Shim/Proxy
+## Phase 9 — No Shim/Proxy
 
 1. Не реализовывать внешний shim.
 2. Не реализовывать внешний proxy.
@@ -394,21 +435,21 @@ tracing::debug!("reasoning controls ignored for chat-completions wire api");
 4. Основной runtime path должен быть только такой:
 
 ```text
-Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/chat/completions
+Gena core -> gena-chat-completions-adapter -> ChatCompletionsClient -> provider /v1/chat/completions
 ```
 
-## Phase 9 — Upstream-safe Boundary Hardening
+## Phase 10 — Upstream-safe Boundary Hardening
 
 1. Проверить, что изменения в upstream-like `client.rs` сведены к минимуму.
 2. Если возможно, оставить в `client.rs` только:
-   - import adapter module;
+   - import adapter crate;
    - match по `WireApi`;
    - вызов adapter entrypoint.
 3. Вынести все mapping-функции из `client.rs`.
 4. Добавить комментарий рядом с routing-точкой:
 
 ```rust
-// Gena: keep Chat Completions compatibility isolated in chat_completions_adapter
+// Gena: keep Chat Completions compatibility isolated in gena-chat-completions-adapter
 // to reduce upstream merge conflicts. Do not add mapping logic here.
 ```
 
@@ -416,10 +457,9 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
    - adapter принимает canonical input;
    - adapter возвращает canonical `ResponseStream` events;
    - Responses path не зависит от adapter.
-6. Не добавлять Gena-specific provider assumptions в generic upstream-like code.
-7. Если upstream меняет `ResponseItem` / `ResponseEvent`, expected repair должен быть только в adapter mapping tests.
+6. Если upstream меняет `ResponseItem` / `ResponseEvent`, expected repair должен быть только в adapter mapping tests.
 
-## Phase 10 — Mock Integration Tests
+## Phase 11 — Mock Integration Tests
 
 1. Добавить mock e2e test: simple final answer.
 2. Добавить mock e2e test: assistant returns tool call.
@@ -433,7 +473,7 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
 6. Проверить, что второй request после tool execution содержит корректный `role=tool` / `tool_call_id`.
 7. Добавить regression test, который падает, если Chat Completions path начинает использовать Responses WebSocket.
 
-## Phase 11 — Validation
+## Phase 12 — Validation
 
 1. Запустить после Rust-изменений:
    - `just fmt`;
@@ -465,7 +505,7 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
 9. Есть unit tests на mapping.
 10. Есть хотя бы один mock integration test на full loop: `assistant tool_call -> tool result -> assistant final`.
 11. В runtime нет внешнего shim/proxy.
-12. Adapter изолирован в отдельном модуле или clearly separated block и не размывает `ModelClient`.
+12. Adapter изолирован в отдельном crate `gena-chat-completions-adapter`.
 13. Изменения в upstream-like files минимальны и локализованы.
 14. После upstream update ожидаемая зона ремонта — adapter mapping, а не agent loop/tool executor.
 15. Есть tests, которые защищают boundary adapter-а.
@@ -482,6 +522,8 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
 8. Не добавлять shim/proxy в рамках этой задачи.
 9. Не размазывать Chat Completions logic по upstream-like файлам.
 10. Не менять upstream-like код там, где достаточно adapter boundary.
+11. Не использовать module fallback как план реализации; adapter должен быть отдельным crate.
+12. Если нужны private upstream-типы, создать минимальный `AdapterInput`/wrapper boundary, а не переносить adapter внутрь `codex-core`.
 
 ## Desired final architecture
 
@@ -496,6 +538,12 @@ ModelClient
         ├── ToolSpec[] -> chat tools[]
         ├── Chat output -> ResponseEvent
         └── Chat tool_calls -> existing tool executor
+```
+
+Required code boundary:
+
+```text
+gena-chat-completions-adapter crate
 ```
 
 Главное правило:
