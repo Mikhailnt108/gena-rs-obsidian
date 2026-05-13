@@ -30,6 +30,35 @@
   - remaining full gate failures look load/timing sensitive, not deterministic regressions.
 - Merge to `main` intentionally not performed because the full workspace gate is still not green.
 
+## 2026-05-13 — Upstream 0.130.0 final gate green and merged to main
+- Пользователь попросил выбрать наиболее оптимальный вариант для remaining full gate failures.
+- Выбран путь reduced `libtest` parallelism:
+  - сначала подтвердить full workspace functionality без искусственной конкуренции между тестами;
+  - не менять таймауты и не harden tests до появления воспроизводимого failure в controlled mode.
+- Final full workspace gate:
+  - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast -- --test-threads=1`
+  - result: PASS.
+- Внутри final full workspace gate прошли все ранее проблемные targets:
+  - `codex-app-server --lib`;
+  - `codex-app-server --test all`;
+  - `codex-core --lib`;
+  - `codex-core --test all`.
+- Gena-specific crates also passed:
+  - `gena-branding`;
+  - `gena-config`;
+  - `gena-plugin-api`;
+  - `gena-plugins-core`;
+  - `gena-runtime`;
+  - `gena-types`;
+  - `gena-upstream-adapter`.
+- Delivery completed according to user policy:
+  - `main` fast-forwarded from `62bf544281` to `2734ce9d5f`;
+  - `origin/main` pushed;
+  - PR delivery path was not used.
+- Residual operational note:
+  - default fully parallel local workspace run showed load-sensitive app-server/core timeouts on this machine;
+  - accepted green gate for this merge is the full workspace run with `-- --test-threads=1`.
+
 ## 2026-05-12 — Upstream 0.130.0 targeted core fixes and interrupted full test rerun
 - Продолжена подготовка branch `chore/upstream-rust-v0.130.0`.
 - Пользователь изменил delivery policy:

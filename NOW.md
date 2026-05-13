@@ -1,13 +1,14 @@
 # NOW
 
 ## Current Goal
-Подготовить upstream update Gena до `rust-v0.130.0`.
+Upstream update Gena до `rust-v0.130.0` доставлен в `main`.
 
 ## State
 - Кодовый репозиторий: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
-- Ветка кода: `chore/upstream-rust-v0.130.0`, запушена в `origin/chore/upstream-rust-v0.130.0`.
-- Пользователь изменил delivery policy: PR не делать, после green gate мержить ветку напрямую в `main` и пушить `main`.
+- Кодовый `main` fast-forward merged to `2734ce9d5f` and pushed to `origin/main`.
+- Source branch `chore/upstream-rust-v0.130.0` remains pushed in `origin/chore/upstream-rust-v0.130.0`.
+- Пользователь изменил delivery policy: PR не делать, после green gate мержить ветку напрямую в `main` и пушить `main`; выполнено 2026-05-13.
 - Draft PR #1 существует из предыдущего шага, но дальше не используется как delivery path.
 - Upstream tag: `rust-v0.130.0`.
 - Merge commit: `3615ed38f4` (`Merge tag 'rust-v0.130.0'`).
@@ -20,7 +21,7 @@
 - Диск был заполнен во время test link; очищено:
   - `codex-rs/target`;
   - старые `codex-rs/dist/gena-v0.125.0-macos-arm64*` artifacts.
-- После полного test sweep диск снова заполнился; `codex-rs/target` удалён, сейчас около 73G свободно на `/System/Volumes/Data`.
+- Для освобождения места перед финальным gate удалялся `codex-rs/target`; после финального прогона около 35G свободно на `/System/Volumes/Data`.
 - `git diff --check` по unstaged ручным правкам чистый.
 - `git diff --cached --check` показывает trailing whitespace в upstream snapshot/patch content (`.snap`, `patches/v8_*`), не исправлялось, чтобы не менять snapshot/patch payload.
 - Полный workspace test был запущен:
@@ -81,16 +82,29 @@
     - `-p codex-core --lib`;
     - `-p codex-core --test all`.
   - failing tests were the same load-sensitive app-server/core areas and all pass when rerun individually.
-- Current code diff is only accepted TUI snapshot updates.
+- User asked to choose the optimal next path; selected reduced `libtest` parallelism instead of hardening timeouts first.
+- 2026-05-13 final full workspace gate passed:
+  - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast -- --test-threads=1`
+  - result: PASS.
+  - Previously failing targets passed inside the workspace run:
+    - `codex-app-server --lib`;
+    - `codex-app-server --test all`;
+    - `codex-core --lib`;
+    - `codex-core --test all`.
+  - Gena-specific crates also passed in the final full workspace run.
+- Code repo delivery:
+  - branch `chore/upstream-rust-v0.130.0` commit `2734ce9d5f` pushed;
+  - `main` fast-forwarded from `62bf544281` to `2734ce9d5f`;
+  - `origin/main` pushed.
 
 ## Blockers
-- Full workspace test is still not green.
-- Observed failures currently look load/timing sensitive because every failed test passes in isolation.
-- Need decide next validation path: investigate/increase deadlines for load-sensitive tests or rerun full workspace under reduced test parallelism before direct merge to `main`.
+- No current blocker for upstream `rust-v0.130.0` merge delivery.
+- Residual note: default fully parallel local workspace run can expose load-sensitive timeouts on this machine; final accepted gate used `-- --test-threads=1`.
 
 ## Next Step
-1. Commit/push accepted TUI snapshot updates and this Obsidian checkpoint.
-2. Choose next gate strategy for load-sensitive full workspace failures:
-   - rerun full workspace with reduced test parallelism; or
-   - harden the affected app-server/core tests against full-workspace load.
-3. Once full gate is green, merge `chore/upstream-rust-v0.130.0` directly into `main` and push `main`; do not open/use PR as delivery path.
+1. Decide whether to delete/archive the old draft PR #1 and branch `chore/upstream-rust-v0.130.0`.
+2. Start post-merge release path for `0.130.0` if needed:
+   - debug build/install;
+   - LLMOps smoke;
+   - manual TUI smoke;
+   - release package/installer.
