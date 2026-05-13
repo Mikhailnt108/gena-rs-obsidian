@@ -1,45 +1,97 @@
-# TASK: Реализовать Chat Completions compatibility adapter для Responses-native agent loop в Gena CLI
+# ROADMAP: Chat Completions Adapter для Responses-native agent loop в Gena CLI
 
-## Контекст
+Источник: `TASKS/CODEX_CHAT_COMPLETIONS_COMPAT_ADAPTER.md`
 
-Проект: `gena-rs-project`
+Цель: реализовать Chat Completions compatibility adapter для Responses-native agent loop в Gena CLI без отдельного agent loop и без поломки `WireApi::Responses`.
 
-Gena CLI построен на базе Codex CLI и должен сохранить Responses-native архитектуру ядра, но уметь работать с LLMOps / LiteLLM / OpenAI-compatible провайдерами, которые поддерживают `/v1/chat/completions`.
+## Главный архитектурный выбор
 
-Главная архитектурная идея:
+Для Gena основное и единственное решение в рамках этой задачи — **internal adapter внутри core**.
+
+**Shim/proxy не реализовывать.**
 
 ```text
-Agent loop знает только canonical Responses-style модель:
-- ResponseItem
-- ResponseEvent
-- tool calls
-- tool outputs
-- completed event
-
-Chat Completions НЕ должен становиться отдельной веткой agent loop.
-Chat Completions должен быть compatibility adapter, который притворяется Responses API.
+Gena Agent Loop
+  работает только с ResponseItem / ResponseEvent
+        |
+        v
+ModelClient
+  ├── ResponsesAdapter
+  │     -> /v1/responses
+  │
+  └── ChatCompletionsAdapter
+        -> /v1/chat/completions
 ```
+
+Главное правило:
+
+```text
+Agent loop не знает, что под капотом был Chat Completions.
+Chat Completions Adapter делает вид, что Chat Completions — это Responses API.
+```
+
+## Что НЕ делать
+
+Не делать runtime-схему:
+
+```text
+Gena -> fake /v1/responses shim -> provider /v1/chat/completions
+```
+
+Не делать runtime-схему:
+
+```text
+Gena -> external proxy -> provider /v1/chat/completions
+```
+
+Почему:
+
+- внешний shim/proxy не видит внутренние `ResponseItem` / `ResponseEvent` так же удобно, как core;
+- внешний shim/proxy хуже понимает tool lifecycle;
+- усложняется отладка agent loop;
+- появляется лишний сетевой слой;
+- сложнее тестировать full loop;
+- выше риск расхождения с upstream Codex;
+- это уводит задачу от нужной архитектуры.
+
+## Почему нужен именно adapter
+
+Adapter находится внутри runtime и видит:
+
+- `ResponseItem`;
+- `ResponseEvent`;
+- `Prompt`;
+- tool definitions;
+- tool results;
+- turn boundary;
+- retries/errors;
+- telemetry;
+- token usage;
+- provider config.
+
+Поэтому adapter может корректно мапить Chat Completions в Responses-style agent loop без отдельного loop и без отдельного tool executor.
 
 ## Что уже есть
 
 В проекте уже есть:
 
-- `WireApi::Responses`
-- `WireApi::ChatCompletions`
-- built-in provider `llmops`
-- env-переключатель `LLMOPS_WIRE_API`
-- `ChatCompletionsClient`
+- `WireApi::Responses`;
+- `WireApi::ChatCompletions`;
+- built-in provider `llmops`;
+- env-переключатель `LLMOPS_WIRE_API`;
+- `ChatCompletionsClient`;
 - базовый парсинг:
-  - `content`
-  - `tool_calls`
-  - legacy `function_call`
-  - `usage`
+  - `content`;
+  - `tool_calls`;
+  - legacy `function_call`;
+  - `usage`.
 
 Ключевые файлы-кандидаты:
 
 ```text
 codex-rs/model-provider-info/src/lib.rs
 codex-rs/core/src/client.rs
+codex-rs/core/src/chat_completions_adapter.rs
 codex-rs/codex-api/src/common.rs
 codex-rs/codex-api/src/endpoint/chat_completions.rs
 codex-rs/core/tests/suite/client.rs
@@ -63,41 +115,34 @@ agent loop Gena/Codex мог нормально:
 6. получить финальный ответ;
 7. не ломать Responses-native режим.
 
-## Главный принцип
-
-Нельзя строить отдельный agent loop для Chat Completions.
-
-Нужно сделать mapping:
-
-```text
-Responses-style Prompt / ResponseItem[]
-        ↓
-Chat Completions messages[]
-        ↓
-Chat response content/tool_calls
-        ↓
-ResponseEvent / ResponseItem
-        ↓
-существующий agent loop
-```
-
 ---
 
-# Required implementation
+# Phase 0 — Baseline Discovery
 
-## 1. Найти текущую точку выбора wire_api
+1. Найти текущую точку выбора `wire_api` в `codex-rs/core/src/client.rs`.
+2. Зафиксировать текущий Responses request/stream path, включая HTTP Responses и WebSocket.
+3. Найти существующие типы и variants для:
+   - `ResponseItem` function/tool call;
+   - `ResponseItem` tool result / function output;
+   - `ResponseEvent::OutputItemDone`;
+   - `TokenUsage`;
+   - `ResponseStream`.
+4. Проверить текущие структуры Chat Completions в:
+   - `codex-rs/codex-api/src/common.rs`;
+   - `codex-rs/codex-api/src/endpoint/chat_completions.rs`.
+5. Найти существующую генерацию tool schema для Responses API и оценить совместимость с Chat Completions.
+6. Проверить, как current loop добавляет tool result обратно в следующий model request.
 
-Найди в `codex-rs/core/src/client.rs`, где создаётся/стримится запрос к модели.
+# Phase 1 — Wire API Routing
 
-Нужно определить место, где сейчас используется:
+1. Добавить явную развилку по `self.state.provider.info().wire_api`.
+2. Оставить существующий path для `WireApi::Responses` без изменения поведения.
+3. Ограничить WebSocket path только `WireApi::Responses`.
+4. Для `WireApi::ChatCompletions` направить выполнение в `ChatCompletionsAdapter` через HTTP unary request.
+5. Не добавлять внешний shim/proxy.
+6. Добавить regression coverage, подтверждающую, что Responses path не ушёл в Chat Completions branch.
 
-```rust
-provider.info().wire_api
-```
-
-или где по факту всегда идёт Responses path.
-
-Добавь явную развилку:
+Целевая форма:
 
 ```rust
 match self.state.provider.info().wire_api {
@@ -105,55 +150,46 @@ match self.state.provider.info().wire_api {
         // existing Responses path
     }
     WireApi::ChatCompletions => {
-        // new compatibility path
+        // ChatCompletionsAdapter path
     }
 }
 ```
 
-Важно:
+# Phase 2 — Adapter Skeleton
 
-- Responses path не ломать.
-- WebSocket path должен использоваться только для `WireApi::Responses`.
-- Для `WireApi::ChatCompletions` использовать HTTP unary request.
-- Если Chat Completions пока не поддерживает streaming, внутри adapter можно эмулировать stream через `mpsc::channel`, отправляя события последовательно.
-
----
-
-## 2. Сделать ChatCompletions compatibility adapter
-
-Создать отдельный модуль, например:
+1. Создать отдельный модуль adapter:
 
 ```text
 codex-rs/core/src/chat_completions_adapter.rs
 ```
 
-или рядом с client logic, если проектная структура требует иначе.
-
-Примерная ответственность модуля:
+2. Adapter должен быть внутренним core-компонентом, а не HTTP shim/proxy.
+3. Реализовать entrypoint уровня:
 
 ```rust
 pub(crate) async fn stream_chat_completions_as_responses(
-    client: &ModelClient,
+    client_setup: CurrentClientSetup,
     prompt: &Prompt,
     model_info: &ModelInfo,
-    ...
+    telemetry: ...,
 ) -> Result<ResponseStream>
 ```
 
-Названия можно адаптировать под текущий код.
+Сигнатуру адаптировать под реальные visibility и текущие структуры.
 
-Adapter должен:
+4. Adapter должен:
+   - построить `ChatCompletionsRequest`;
+   - вызвать `ChatCompletionsClient::complete`;
+   - преобразовать результат в Responses-style events;
+   - вернуть `ResponseStream`.
+5. Для non-stream Chat Completions эмулировать event stream через `mpsc::channel`.
+6. Не делать fake token-by-token streaming; отправлять последовательные semantic events.
+7. Не создавать отдельный agent loop внутри adapter.
+8. Не создавать отдельный tool executor внутри adapter.
 
-1. построить `ChatCompletionsRequest`;
-2. вызвать `ChatCompletionsClient::complete`;
-3. преобразовать результат в `ResponseEvent`;
-4. вернуть `ResponseStream`.
+# Phase 3 — Input Mapping
 
----
-
-## 3. Mapping Prompt / ResponseItem -> Chat messages
-
-Нужно реализовать converter:
+1. Реализовать converter:
 
 ```rust
 fn responses_input_to_chat_messages(
@@ -162,27 +198,17 @@ fn responses_input_to_chat_messages(
 ) -> Vec<ChatCompletionsRequestMessage>
 ```
 
-Минимальная логика:
-
-```text
-instructions -> system message
-user input -> user message
-assistant text -> assistant message
-tool call output -> tool/result message, если текущая модель common.rs это поддерживает
-```
-
-Если текущий `ChatCompletionsRequestMessage` слишком простой:
-
-```rust
-pub struct ChatCompletionsRequestMessage {
-    pub role: String,
-    pub content: String,
-}
-```
-
-то его надо расширить, чтобы поддержать tool-result сообщения.
-
-OpenAI-compatible формат обычно такой:
+2. Mapping minimum:
+   - instructions -> `system`;
+   - user input -> `user`;
+   - assistant text -> `assistant`;
+   - assistant tool call, если нужен для истории -> `assistant` with `tool_calls`;
+   - tool output -> `tool` message with `tool_call_id`.
+3. При необходимости расширить `ChatCompletionsRequestMessage` полями:
+   - `tool_call_id`;
+   - `name`;
+   - `tool_calls`, если текущий формат требует сохранять assistant tool calls в истории.
+4. Сохранить OpenAI-compatible формат tool-result message:
 
 ```json
 {
@@ -192,51 +218,28 @@ OpenAI-compatible формат обычно такой:
 }
 ```
 
-Поэтому нужно аккуратно расширить структуру:
+5. Не терять связку:
 
-```rust
-pub struct ChatCompletionsRequestMessage {
-    pub role: String,
-    pub content: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_call_id: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-}
+```text
+assistant tool_call id -> tool result tool_call_id
 ```
 
-Если в коде есть более строгий тип сообщений — использовать существующий стиль проекта.
+6. Добавить unit tests:
+   - instructions + user input -> system + user messages;
+   - assistant text ResponseItem -> assistant message;
+   - tool output ResponseItem -> role `tool` with `tool_call_id`;
+   - tool result сохраняет call id.
 
----
+# Phase 4 — Tool Schema Mapping
 
-## 4. Mapping tools
-
-Сейчас `ChatCompletionsRequest` уже содержит:
-
-```rust
-pub tools: Vec<Value>,
-pub tool_choice: Option<String>,
-```
-
-Нужно переиспользовать существующую генерацию tool schema, если возможно.
-
-Для Responses уже используется:
-
-```rust
-create_tools_json_for_responses_api(&prompt.tools)
-```
-
-Нужно проверить формат результата.
-
-Если Responses-tools несовместимы с Chat Completions, добавить converter:
+1. Переиспользовать существующую генерацию tool schema, если формат совместим.
+2. Если Responses-tools несовместимы с Chat Completions, добавить маленький converter:
 
 ```rust
 fn responses_tools_to_chat_tools(tools: Vec<Value>) -> Vec<Value>
 ```
 
-Цель — получить формат:
+3. Целевой формат tool schema:
 
 ```json
 {
@@ -244,359 +247,156 @@ fn responses_tools_to_chat_tools(tools: Vec<Value>) -> Vec<Value>
   "function": {
     "name": "...",
     "description": "...",
-    "parameters": { ... }
+    "parameters": { }
   }
 }
 ```
 
-Важно:
+4. Не дублировать tool definitions и не менять Responses tool schema.
+5. Не hardcode-ить tools только под `shell` или только под `llmops`.
+6. Добавить unit tests на Chat Completions tool schema format.
 
-- не дублировать tool definitions;
-- не ломать existing Responses tools;
-- добавить unit tests на формат tool schema.
+# Phase 5 — Output Mapping
 
----
+1. Реализовать mapping:
 
-## 5. Mapping Chat output -> ResponseEvent
-
-`ChatCompletionsOutput` содержит:
-
-```rust
-pub id: String,
-pub content: String,
-pub tool_calls: Vec<ChatCompletionsToolCall>,
-pub usage: Option<ChatCompletionsResponseUsage>,
+```text
+ChatCompletionsOutput -> ResponseEvent stream
 ```
 
-Нужно преобразовать это в поток событий:
+Минимальная последовательность:
 
-```rust
+```text
 ResponseEvent::Created
-ResponseEvent::OutputTextDelta(content)
-ResponseEvent::OutputItemDone(...)
+ResponseEvent::OutputTextDelta(...), если есть content
+ResponseEvent::OutputItemDone(...), если есть assistant text item
+ResponseEvent::OutputItemDone(...), для каждого tool call item
 ResponseEvent::Completed { ... }
 ```
 
-Для tool calls нужно создать соответствующий `ResponseItem`, который существующий agent loop уже умеет выполнять.
-
-Нужно найти в проекте, какой variant `ResponseItem` используется для function/tool call в Responses API.
-
-Искомые места:
-
-```bash
-rg "FunctionCall"
-rg "function_call"
-rg "ToolCall"
-rg "ResponseItem::"
-rg "OutputItemDone"
-```
-
-Затем сделать mapping:
+2. Реализовать mapping:
 
 ```text
-ChatCompletionsToolCall {
-  id,
-  name,
-  arguments
-}
-    ↓
-ResponseItem::<existing function/tool call variant>
+ChatCompletionsToolCall -> ResponseItem tool/function call
 ```
 
-Важно:
-
-- `call_id` сохранять, если он есть;
-- если `id` отсутствует, генерировать стабильный id вида `chatcmpl-call-{index}`;
-- `arguments` передавать как string JSON, не ломая escaping;
-- если arguments невалидный JSON, не падать, а передать как string и дать loop/tool executor обработать ошибку.
-
----
-
-## 6. Mapping usage
-
-Нужно преобразовать:
-
-```rust
-ChatCompletionsResponseUsage {
-    prompt_tokens,
-    completion_tokens,
-    total_tokens,
-}
-```
-
-в существующий `TokenUsage`, если поля совпадают.
-
-Если полного соответствия нет — заполнить доступные поля, остальные оставить default/None.
-
-В `Completed` event нужно передать usage:
-
-```rust
-ResponseEvent::Completed {
-    response_id,
-    token_usage: Some(...),
-    end_turn: Some(...)
-}
-```
-
-Правило:
+3. Сохранять `call_id`, если он есть.
+4. Если `id` отсутствует, генерировать стабильный id вида:
 
 ```text
-если есть tool_calls -> end_turn = Some(false)
-если tool_calls нет -> end_turn = Some(true)
+chatcmpl-call-{index}
 ```
 
----
+5. Передавать `arguments` как JSON string без поломки escaping.
+6. Если `arguments` невалидный JSON, не падать в adapter; передать дальше и дать loop/tool executor обработать ошибку.
+7. Adapter не должен сам выполнять tool call.
+8. Добавить unit tests:
+   - Chat tool call -> ResponseItem tool call;
+   - multiple tool calls -> multiple ResponseItem tool calls;
+   - missing id -> generated stable id;
+   - invalid arguments do not crash adapter.
 
-## 7. Reasoning downgrade
+# Phase 6 — Usage And Turn Boundary
 
-Chat Completions не поддерживает Responses reasoning нативно.
-
-Нужно явно сделать graceful downgrade:
-
-- не отправлять `reasoning`;
-- не отправлять `text.verbosity`, если Chat API не поддерживает;
-- не отправлять `include`;
-- не отправлять `store`;
-- не отправлять `parallel_tool_calls`, если Chat provider может не поддерживать.
-
-Если в config/model_info задано reasoning effort / summary, adapter не должен падать.
-
-Добавить debug/warn trace, но без шума для пользователя:
-
-```rust
-tracing::debug!("reasoning controls ignored for chat-completions wire api");
-```
-
----
-
-## 8. Streaming compatibility
-
-Если Chat Completions используется в non-stream режиме, всё равно вернуть `ResponseStream`.
-
-Примерная схема:
-
-```rust
-let (tx, rx) = mpsc::channel(16);
-
-tokio::spawn(async move {
-    tx.send(Ok(ResponseEvent::Created)).await;
-    if !content.is_empty() {
-        tx.send(Ok(ResponseEvent::OutputTextDelta(content.clone()))).await;
-        tx.send(Ok(ResponseEvent::OutputItemDone(text_item))).await;
-    }
-    for tool_call in tool_calls {
-        tx.send(Ok(ResponseEvent::OutputItemDone(tool_item))).await;
-    }
-    tx.send(Ok(ResponseEvent::Completed { ... })).await;
-});
-
-Ok(ResponseStream {
-    rx_event: rx,
-    upstream_request_id: None,
-})
-```
-
-Лучше не делать fake token-by-token streaming. Достаточно event streaming.
-
----
-
-# Tests
-
-## Unit tests
-
-Добавить тесты на:
-
-### 1. Chat message mapping
-
-```text
-instructions + user input -> system + user messages
-```
-
-### 2. Tool result mapping
-
-```text
-tool output ResponseItem -> role=tool message with tool_call_id
-```
-
-### 3. Chat tool call mapping
-
-```text
-ChatCompletionsToolCall -> ResponseItem tool call
-```
-
-### 4. Usage mapping
+1. Реализовать mapping:
 
 ```text
 ChatCompletionsResponseUsage -> TokenUsage
 ```
 
-### 5. End turn behavior
+2. Заполнять только доступные поля, остальные оставлять default/None.
+3. Передавать usage в `ResponseEvent::Completed`.
+4. Правило `end_turn`:
+   - no tool calls -> `Some(true)`;
+   - has tool calls -> `Some(false)`.
+5. Смысл правила: если модель вернула tool calls, turn ещё не финализирован и agent loop должен продолжить через tool executor.
+6. Добавить unit tests:
+   - usage mapping;
+   - no tool calls -> end_turn true;
+   - has tool calls -> end_turn false.
+
+# Phase 7 — Reasoning Downgrade
+
+1. Для `WireApi::ChatCompletions` не отправлять Responses-only controls:
+   - `reasoning`;
+   - `text.verbosity`, если Chat API не поддерживает;
+   - `include`;
+   - `store`;
+   - `parallel_tool_calls`, если provider может не поддерживать;
+   - Responses WebSocket metadata.
+2. Если в config/model_info задан reasoning effort/summary, adapter не должен падать.
+3. Добавить `tracing::debug!` о graceful downgrade без пользовательского шума:
+
+```rust
+tracing::debug!("reasoning controls ignored for chat-completions wire api");
+```
+
+4. Добавить coverage на сценарий с заданным reasoning config в Chat Completions mode.
+
+# Phase 8 — No Shim/Proxy
+
+1. Не реализовывать внешний shim.
+2. Не реализовывать внешний proxy.
+3. Не добавлять зависимость runtime от промежуточного HTTP-сервиса.
+4. Основной runtime path должен быть только такой:
 
 ```text
-no tool calls -> end_turn true
-has tool calls -> end_turn false
+Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/chat/completions
 ```
 
----
+# Phase 9 — Mock Integration Tests
 
-## Integration / e2e mock tests
+1. Добавить mock e2e test: simple final answer.
+2. Добавить mock e2e test: assistant returns tool call.
+3. Добавить mock e2e test full loop:
+   - model returns tool call;
+   - existing tool executor runs tool;
+   - tool result goes into next model request;
+   - model returns final answer.
+4. Проверить, что Chat Completions branch не создает отдельный tool executor.
+5. Проверить, что agent loop не знает о Chat Completions internals.
+6. Проверить, что второй request после tool execution содержит корректный `role=tool` / `tool_call_id`.
 
-Добавить mock e2e тест, где fake Chat Completions endpoint возвращает:
+# Phase 10 — Validation
 
-### Case A: simple final answer
+1. Запустить после Rust-изменений:
+   - `just fmt`;
+   - targeted unit/integration tests for touched crates.
+2. Перед финализацией крупного изменения запустить scoped:
+   - `just fix -p <crate>`.
+3. Полный `cargo test` запускать только с явного разрешения пользователя.
+4. Manual LLMOps validation:
+   - simple prompt without tools;
+   - read file task;
+   - create file task;
+   - edit file task;
+   - shell command task.
 
-```json
-{
-  "id": "chatcmpl-1",
-  "choices": [
-    {
-      "message": {
-        "role": "assistant",
-        "content": "hello"
-      }
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 10,
-    "completion_tokens": 2,
-    "total_tokens": 12
-  }
-}
-```
+# Acceptance Criteria
 
-Ожидание:
+1. `WireApi::Responses` работает как раньше.
+2. `WireApi::ChatCompletions` не падает на обычном запросе.
+3. Chat Completions может вернуть финальный assistant answer.
+4. Chat Completions может вернуть tool call.
+5. Существующий agent loop выполняет tool call.
+6. Tool result уходит обратно в модель.
+7. После tool result модель может вернуть final answer.
+8. Responses-specific reasoning/WebSocket logic не вызывается для Chat Completions.
+9. Есть unit tests на mapping.
+10. Есть хотя бы один mock integration test на full loop: `assistant tool_call -> tool result -> assistant final`.
+11. В runtime нет внешнего shim/proxy.
+12. Adapter изолирован в отдельном модуле или clearly separated block и не размывает `ModelClient`.
 
-```text
-agent получает финальный ответ
-tool executor не вызывается
-turn завершается
-```
+# Constraints
 
-### Case B: tool call
-
-```json
-{
-  "id": "chatcmpl-2",
-  "choices": [
-    {
-      "message": {
-        "role": "assistant",
-        "content": "",
-        "tool_calls": [
-          {
-            "id": "call_1",
-            "type": "function",
-            "function": {
-              "name": "shell",
-              "arguments": "{\"command\":[\"pwd\"]}"
-            }
-          }
-        ]
-      }
-    }
-  ]
-}
-```
-
-Ожидание:
-
-```text
-agent loop видит tool call
-tool executor выполняет tool
-tool result добавляется в следующий model request
-```
-
-### Case C: tool call -> final answer
-
-Mock server должен вернуть:
-
-1. первый ответ с tool call;
-2. второй ответ после tool result с финальным content.
-
-Ожидание:
-
-```text
-agent loop полностью проходит:
-model -> tool call -> tool result -> model -> final answer
-```
-
----
-
-# Manual validation
-
-После реализации проверить:
-
-```bash
-cargo fmt
-cargo clippy --all-targets --all-features
-cargo test
-```
-
-Проверить LLMOps mode:
-
-```bash
-export LLMOPS_TOKEN="..."
-export LLMOPS_WIRE_API=chat-completions
-export LLMOPS_BASE_URL="https://devx-copilot.tech/v1"
-
-cargo run -p codex -- --oss-provider llmops
-```
-
-Или текущей командой запуска Gena/Codex в проекте.
-
-Проверить сценарии:
-
-```text
-1. простой вопрос без tools
-2. задача на чтение файла
-3. задача на создание файла
-4. задача на изменение файла
-5. задача на запуск shell command
-```
-
----
-
-# Acceptance criteria
-
-Задача считается выполненной, если:
-
-- `WireApi::Responses` работает как раньше;
-- `WireApi::ChatCompletions` не падает на обычном запросе;
-- Chat Completions может вернуть финальный ответ;
-- Chat Completions может вернуть tool call;
-- существующий agent loop выполняет tool call;
-- tool result уходит обратно в модель;
-- после tool result модель может вернуть final answer;
-- Responses-specific reasoning/websocket logic не вызывается для Chat Completions;
-- есть unit tests на mapping;
-- есть хотя бы один mock integration test на full loop:
-  `assistant tool_call -> tool result -> assistant final`.
-
----
-
-# Important constraints
-
-Не делать:
-
-```text
-- отдельный agent loop для Chat Completions
-- отдельный tool executor для Chat Completions
-- hardcode только под llmops
-- ломать Responses API path
-- смешивать provider config и runtime loop logic
-```
-
-Делать:
-
-```text
-- Responses-native core
-- Chat Completions как adapter
-- минимальный diff с upstream Codex
-- отдельные маленькие функции mapping
-- тесты на каждый mapping
-```
-
----
+1. Не делать отдельный agent loop для Chat Completions.
+2. Не делать отдельный tool executor для Chat Completions.
+3. Не hardcode-ить реализацию только под `llmops`.
+4. Не ломать Responses API path.
+5. Не смешивать provider config и runtime loop logic.
+6. Держать diff минимальным относительно upstream Codex.
+7. Делать mapping маленькими отдельными функциями с тестами.
+8. Не добавлять shim/proxy в рамках этой задачи.
 
 # Desired final architecture
 
@@ -606,7 +406,7 @@ ModelClient
   │     ├── HTTP Responses
   │     └── Responses WebSocket
   │
-  └── ChatCompletions compatibility path
+  └── ChatCompletionsAdapter path
         ├── ResponseItem[] -> Chat messages[]
         ├── ToolSpec[] -> chat tools[]
         ├── Chat output -> ResponseEvent
