@@ -268,10 +268,7 @@ Must cover:
 Tests:
 
 ```bash
-cargo test -p codex-core chat_completions_request_merges_instruction_messages_into_first_system_message
-cargo test -p codex-core chat_completion_text_stream_adds_item_before_text_delta
-cargo test -p codex-core chat_completion_retries_action_preamble_without_tool_call
-cargo test -p codex-core chat_completion_detects_action_preamble_without_tool_call
+RUST_MIN_STACK=16777216 cargo test -p codex-core --test all suite::client::chat_completions_text_before_tool_call_runs_tool_loop_to_completion -- --nocapture
 cargo test -p codex-api endpoint::chat_completions::tests
 ```
 

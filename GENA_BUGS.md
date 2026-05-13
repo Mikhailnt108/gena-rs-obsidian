@@ -32,6 +32,31 @@
 | GENA-BUG-017 | `0.128.0` installer отсутствует после upstream merge | fixed by process | `0.128.0` | `0.128.0` artifacts, 2026-05-06 |
 | GENA-BUG-018 | `gena-debug` TUI не запускает prompt для `LLMOPS_TOKEN` и падает на первом запросе | fixed | `0.128.0` debug | `0.128.0`, `c79ac7c704` |
 
+## Latest Verification
+
+### 2026-05-13 — `0.130.0` post-merge debug gate
+
+Status: automated debug gate passed; manual TUI smoke pending.
+
+Verified:
+- Branding regressions GENA-BUG-001..004 did not reproduce on `0.130.0` debug:
+  - `gena-debug --version` -> `gena 0.130.0`;
+  - `/opt/homebrew/bin/gena --version` -> `gena 0.130.0`;
+  - `/opt/homebrew/bin/gena-tui --version` -> `gena-tui 0.130.0`;
+  - Gena CLI/plugin/TUI help uses `gena` / `gena-tui`.
+- LLMOps catalog gate did not reproduce GENA-BUG-006/007:
+  - real `/v1/models` returned HTTP 200, `object=list`, 17 models.
+- Chat Completions smoke did not reproduce GENA-BUG-008..010:
+  - short `gena-debug exec` returned `OK`;
+  - tool-loop smoke executed a shell command before final answer;
+  - no observed `System message must be at the beginning`;
+  - no observed `OutputTextDelta without active item`;
+  - no observed panic/backtrace.
+
+Residual:
+- GENA-BUG-014 remains `needs decision`: the documented real smoke still provides `LLMOPS_TOKEN` via env even though sidecar token exists.
+- Release package/installer for `0.130.0` remains pending until manual TUI smoke passes.
+
 ## Bugs
 
 ### GENA-BUG-001 — `gena --version` печатает `codex-cli`

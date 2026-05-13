@@ -3831,3 +3831,60 @@
   - full test rebuild filled `/System/Volumes/Data` down to ~305MiB free;
   - removed `codex-rs/target` per user instruction;
   - free space recovered to ~73G.
+
+## 2026-05-13 — Post-merge debug install and Gena smoke for 0.130.0
+- Continued from `GENA_UPSTREAM_UPDATE.md` after upstream `rust-v0.130.0` had already been merged to `main`.
+- Code repo state:
+  - branch `main`;
+  - synced with `origin/main`;
+  - head `2734ce9d5f` — `test: update upstream 0.130 tui snapshots`.
+- Debug build:
+  - `CARGO_BUILD_JOBS=2 cargo build -p codex-cli --bin gena -p codex-tui --bin gena-tui` PASS.
+  - Created local debug copies:
+    - `codex-rs/target/debug/gena-debug` -> `gena 0.130.0`;
+    - `codex-rs/target/debug/gena-tui-debug` -> `gena-tui 0.130.0`.
+- Debug install:
+  - refreshed `/opt/homebrew/bin/gena-debug.bin`;
+  - refreshed `/opt/homebrew/bin/gena.bin` as a hardlink to `gena-debug.bin`;
+  - refreshed `/opt/homebrew/bin/gena-tui-debug.bin`;
+  - refreshed `/opt/homebrew/bin/gena-tui.bin` as a hardlink to `gena-tui-debug.bin`;
+  - verified:
+    - `/opt/homebrew/bin/gena-debug --version` -> `gena 0.130.0`;
+    - `/opt/homebrew/bin/gena --version` -> `gena 0.130.0`;
+    - `/opt/homebrew/bin/gena-tui --version` -> `gena-tui 0.130.0`.
+- PATH note:
+  - bare `gena` currently resolves first to `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`, which reports old `0.128.0`;
+  - use `gena-debug` or `/opt/homebrew/bin/gena` for the `0.130.0` debug smoke path.
+- Branding live checks:
+  - `/opt/homebrew/bin/gena-debug --help` starts with `Gena CLI`;
+  - usage includes `gena [OPTIONS] [PROMPT]`;
+  - `/opt/homebrew/bin/gena-debug plugin --help` includes `Usage: gena plugin [OPTIONS] <COMMAND>`;
+  - `/opt/homebrew/bin/gena-tui --help` includes `Usage: gena-tui [OPTIONS] [PROMPT]`.
+- Real LLMOps catalog smoke:
+  - HTTP 200;
+  - response `object=list`;
+  - `data[]` length 17.
+- Real LLMOps non-interactive smoke:
+  - `gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ... 'Ответь ровно одним словом: OK'` PASS with `OK`;
+  - no observed `System message must be at the beginning`;
+  - no observed `OutputTextDelta without active item`;
+  - no panic/backtrace.
+- Tool-loop smoke:
+  - `gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ...` executed `ls -la /Users/mntabunkov/sandbox && du -sh ...` before final answer;
+  - no immediate final turn after an action preamble.
+- Targeted Gena bug gates:
+  - `cargo test -p codex-cli top_level_` PASS;
+  - `cargo test -p codex-tui top_level_` PASS;
+  - `cargo test -p gena-runtime gena_model_list_keeps_full_llmops_catalog_when_current_model_is_configured` PASS;
+  - `cargo test -p codex-api parses_openai_compatible_models_response` PASS;
+  - `cargo test -p codex-api parses_models_response` PASS;
+  - `cargo test -p gena-runtime startup_model_tests` PASS;
+  - `cargo test -p codex-api endpoint::chat_completions::tests` PASS;
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-tui store_prompted_provider_token --lib` PASS;
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-core --test all suite::client::chat_completions_text_before_tool_call_runs_tool_loop_to_completion -- --nocapture` PASS.
+- Process correction:
+  - `GENA_UPSTREAM_UPDATE.md` had stale `codex-core` Chat Completions test names that matched zero tests;
+  - updated the gate to the current non-empty `suite::client::chat_completions_text_before_tool_call_runs_tool_loop_to_completion` test.
+- Pending:
+  - manual TUI smoke with `/model` selection and one prompt;
+  - release package and installer rebuild/verification.
