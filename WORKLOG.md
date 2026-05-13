@@ -1,5 +1,35 @@
 # WORKLOG
 
+## 2026-05-13 — Upstream 0.130.0 TUI snapshots accepted, full gate still load-sensitive
+- Продолжена подготовка branch `chore/upstream-rust-v0.130.0`.
+- Проверено состояние перед работой:
+  - кодовая ветка `chore/upstream-rust-v0.130.0` была clean и synced with `origin/chore/upstream-rust-v0.130.0`;
+  - Obsidian `main` был clean и synced with `origin/main`.
+- Все failures, наблюдавшиеся в interrupted full run 2026-05-12, прошли изолированно:
+  - `codex-app-server --lib` tracing span test PASS;
+  - `codex-app-server --test all` realtime delegated shell test PASS;
+  - `codex-app-server --test all` command execution process id notification test PASS;
+  - `codex-core --lib` execve permission hook test PASS with `RUST_MIN_STACK=16777216`;
+  - `codex-core --test all` abort task history test PASS with `RUST_MIN_STACK=16777216`;
+  - `codex-core --test all` spawned subagent execpolicy amendment test PASS with `RUST_MIN_STACK=16777216`.
+- `codex-tui --lib` snapshot failures inspected and accepted:
+  - version text updated from `v0.128.0` to `v0.130.0`;
+  - `/goal` oversized objective snapshot now expects formatted separators from `codex_protocol::num_format`.
+- Проверки:
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-tui --lib --no-fail-fast` PASS;
+  - `cargo insta pending-snapshots --manifest-path tui/Cargo.toml` PASS, no pending snapshots;
+  - `just fmt` PASS;
+  - `git diff --check` PASS.
+- Full workspace test rerun completed:
+  - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast`
+  - result: FAILED;
+  - failed targets: `codex-app-server --test all`, `codex-core --lib`, `codex-core --test all`.
+- All tests that failed in the full workspace run were rerun individually and passed.
+- Current assessment:
+  - accepted TUI snapshots are legitimate upstream `0.130.0` updates;
+  - remaining full gate failures look load/timing sensitive, not deterministic regressions.
+- Merge to `main` intentionally not performed because the full workspace gate is still not green.
+
 ## 2026-05-12 — Upstream 0.130.0 targeted core fixes and interrupted full test rerun
 - Продолжена подготовка branch `chore/upstream-rust-v0.130.0`.
 - Пользователь изменил delivery policy:
