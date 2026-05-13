@@ -2,7 +2,7 @@
 
 Источник: `TASKS/CODEX_CHAT_COMPLETIONS_COMPAT_ADAPTER.md`
 
-Цель: реализовать Chat Completions compatibility adapter для Responses-native agent loop в Gena CLI без отдельного agent loop и без поломки `WireApi::Responses`.
+Цель: реализовать Chat Completions compatibility adapter для Responses-native agent loop в Gena CLI без отдельного agent loop, без shim/proxy, без поломки `WireApi::Responses` и с минимальным diff относительно upstream Codex.
 
 ## Главный архитектурный выбор
 
@@ -28,6 +28,95 @@ ModelClient
 ```text
 Agent loop не знает, что под капотом был Chat Completions.
 Chat Completions Adapter делает вид, что Chat Completions — это Responses API.
+```
+
+## Upstream-safe design
+
+Так как Gena регулярно обновляет upstream Codex, adapter должен быть реализован так, чтобы после апдейтов upstream не приходилось бесконечно чинить mapping и конфликты.
+
+Главный принцип:
+
+```text
+Минимальная точка врезки в upstream-код + изолированный adapter-модуль + contract tests.
+```
+
+Правильная форма:
+
+```text
+upstream-like ModelClient
+  └── маленькая развилка по WireApi
+        ├── existing Responses path untouched
+        └── call into gena-owned adapter module
+```
+
+Неправильная форма:
+
+```text
+размазать Chat Completions mapping по client.rs / loop / tool executor / protocol handling
+```
+
+### Правила upstream-safe реализации
+
+1. `WireApi::Responses` path не менять, кроме минимальной развилки, если это технически необходимо.
+2. В `codex-rs/core/src/client.rs` держать только thin routing layer.
+3. Всю Chat Completions compatibility logic держать в отдельном модуле:
+
+```text
+codex-rs/core/src/chat_completions_adapter.rs
+```
+
+4. Если нужно больше кода, разбить adapter на подмодули:
+
+```text
+chat_completions_adapter/
+  mod.rs
+  input_mapping.rs
+  output_mapping.rs
+  tool_mapping.rs
+  usage_mapping.rs
+  tests.rs
+```
+
+5. Не менять существующий tool executor.
+6. Не менять существующий Responses event loop.
+7. Не менять существующий Responses WebSocket path.
+8. Не добавлять Gena-specific логику в upstream-like участки без необходимости.
+9. Если требуется изменить общий тип (`ChatCompletionsRequestMessage`, `ChatCompletionsOutput`, `ResponseEvent`), изменение должно быть минимальным, generic и покрыто тестами.
+10. Adapter должен зависеть от stable boundary types:
+    - `Prompt`;
+    - `ResponseItem`;
+    - `ResponseEvent`;
+    - `ResponseStream`;
+    - `ToolSpec` / tool schema;
+    - `TokenUsage`.
+11. Не завязывать adapter на внутренние детали конкретного provider, например только `llmops`.
+12. Все mapping-функции должны быть маленькими и покрыты unit tests, чтобы после upstream update сразу видеть, что сломалось.
+
+### Целевой diff после upstream update
+
+После обновления upstream Codex ожидаемый repair surface должен быть таким:
+
+```text
+1. Проверить, что thin WireApi routing в ModelClient ещё компилируется.
+2. Проверить, что adapter entrypoint ещё получает нужные stable boundary types.
+3. Запустить contract tests mapping-функций.
+4. Если upstream поменял ResponseItem/ResponseEvent, чинить только adapter mapping, а не весь loop.
+```
+
+Цель — чтобы upstream update обычно требовал правки только в:
+
+```text
+codex-rs/core/src/chat_completions_adapter*.rs
+```
+
+а не в:
+
+```text
+agent loop
+tool executor
+Responses stream handling
+WebSocket handling
+multiple unrelated upstream files
 ```
 
 ## Что НЕ делать
@@ -132,6 +221,11 @@ agent loop Gena/Codex мог нормально:
    - `codex-rs/codex-api/src/endpoint/chat_completions.rs`.
 5. Найти существующую генерацию tool schema для Responses API и оценить совместимость с Chat Completions.
 6. Проверить, как current loop добавляет tool result обратно в следующий model request.
+7. Зафиксировать upstream-sensitive участки, которые нельзя менять без необходимости:
+   - Responses WebSocket path;
+   - Responses HTTP stream path;
+   - tool executor;
+   - agent loop orchestration.
 
 # Phase 1 — Wire API Routing
 
@@ -141,6 +235,7 @@ agent loop Gena/Codex мог нормально:
 4. Для `WireApi::ChatCompletions` направить выполнение в `ChatCompletionsAdapter` через HTTP unary request.
 5. Не добавлять внешний shim/proxy.
 6. Добавить regression coverage, подтверждающую, что Responses path не ушёл в Chat Completions branch.
+7. Держать routing-код максимально тонким: route decision + вызов adapter entrypoint.
 
 Целевая форма:
 
@@ -186,6 +281,8 @@ pub(crate) async fn stream_chat_completions_as_responses(
 6. Не делать fake token-by-token streaming; отправлять последовательные semantic events.
 7. Не создавать отдельный agent loop внутри adapter.
 8. Не создавать отдельный tool executor внутри adapter.
+9. Не подтягивать в adapter лишние зависимости от TUI/UI/CLI.
+10. Сделать adapter максимально pure в mapping-частях: input -> output без побочных эффектов, где возможно.
 
 # Phase 3 — Input Mapping
 
@@ -344,7 +441,29 @@ tracing::debug!("reasoning controls ignored for chat-completions wire api");
 Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/chat/completions
 ```
 
-# Phase 9 — Mock Integration Tests
+# Phase 9 — Upstream-safe Boundary Hardening
+
+1. Проверить, что изменения в upstream-like `client.rs` сведены к минимуму.
+2. Если возможно, оставить в `client.rs` только:
+   - import adapter module;
+   - match по `WireApi`;
+   - вызов adapter entrypoint.
+3. Вынести все mapping-функции из `client.rs`.
+4. Добавить комментарий рядом с routing-точкой:
+
+```rust
+// Gena: keep Chat Completions compatibility isolated in chat_completions_adapter
+// to reduce upstream merge conflicts. Do not add mapping logic here.
+```
+
+5. Добавить contract tests на adapter boundary:
+   - adapter принимает canonical input;
+   - adapter возвращает canonical `ResponseStream` events;
+   - Responses path не зависит от adapter.
+6. Не добавлять Gena-specific provider assumptions в generic upstream-like code.
+7. Если upstream меняет `ResponseItem` / `ResponseEvent`, expected repair должен быть только в adapter mapping tests.
+
+# Phase 10 — Mock Integration Tests
 
 1. Добавить mock e2e test: simple final answer.
 2. Добавить mock e2e test: assistant returns tool call.
@@ -356,8 +475,9 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
 4. Проверить, что Chat Completions branch не создает отдельный tool executor.
 5. Проверить, что agent loop не знает о Chat Completions internals.
 6. Проверить, что второй request после tool execution содержит корректный `role=tool` / `tool_call_id`.
+7. Добавить regression test, который падает, если Chat Completions path начинает использовать Responses WebSocket.
 
-# Phase 10 — Validation
+# Phase 11 — Validation
 
 1. Запустить после Rust-изменений:
    - `just fmt`;
@@ -371,6 +491,10 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
    - create file task;
    - edit file task;
    - shell command task.
+5. После следующего upstream update отдельно проверить:
+   - компиляцию routing-точки;
+   - adapter mapping tests;
+   - full-loop mock test.
 
 # Acceptance Criteria
 
@@ -386,6 +510,9 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
 10. Есть хотя бы один mock integration test на full loop: `assistant tool_call -> tool result -> assistant final`.
 11. В runtime нет внешнего shim/proxy.
 12. Adapter изолирован в отдельном модуле или clearly separated block и не размывает `ModelClient`.
+13. Изменения в upstream-like files минимальны и локализованы.
+14. После upstream update ожидаемая зона ремонта — adapter mapping, а не agent loop/tool executor.
+15. Есть tests, которые защищают boundary adapter-а.
 
 # Constraints
 
@@ -397,6 +524,8 @@ Gena core -> ChatCompletionsAdapter -> ChatCompletionsClient -> provider /v1/cha
 6. Держать diff минимальным относительно upstream Codex.
 7. Делать mapping маленькими отдельными функциями с тестами.
 8. Не добавлять shim/proxy в рамках этой задачи.
+9. Не размазывать Chat Completions logic по upstream-like файлам.
+10. Не менять upstream-like код там, где достаточно adapter boundary.
 
 # Desired final architecture
 
@@ -417,4 +546,10 @@ ModelClient
 
 ```text
 Agent loop не должен знать, что под капотом был Chat Completions.
+```
+
+Upstream-safe правило:
+
+```text
+После обновления upstream Codex чинить нужно adapter boundary, а не весь agent loop.
 ```
