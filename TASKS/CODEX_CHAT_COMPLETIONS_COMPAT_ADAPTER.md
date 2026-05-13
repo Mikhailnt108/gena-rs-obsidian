@@ -6,9 +6,15 @@
 
 ## Главный архитектурный выбор
 
-Для Gena решение — **internal Rust adapter**, а не внешний HTTP shim/proxy.
+Выбираем **Вариант A — отдельный workspace crate**:
 
-Предпочтительная целевая форма — отдельный workspace crate:
+```text
+gena-chat-completions-adapter
+```
+
+Это не внешний runtime-сервис, не shim и не proxy. Это внутренний Rust crate в `codex-rs` workspace.
+
+Целевая структура:
 
 ```text
 codex-rs/
@@ -48,49 +54,17 @@ Agent loop не знает, что под капотом был Chat Completions
 Chat Completions Adapter делает вид, что Chat Completions — это Responses API.
 ```
 
-## Crate-first, module-fallback стратегия
+## Почему именно отдельный crate
 
-Нужно стремиться к отдельному crate:
+Отдельный crate лучше, потому что:
 
-```text
-gena-chat-completions-adapter
-```
-
-Почему crate лучше:
-
-- лучше изоляция Gena-specific logic;
-- меньше конфликтов при upstream update;
-- проще contract tests;
-- проще увидеть границу adapter-а;
-- меньше риск размазать mapping по `codex-core`;
-- соответствует текущему направлению workspace, где уже есть `gena-*` crates.
-
-Но если отдельный crate требует большого раскрытия приватных upstream API (`Prompt`, `CurrentClientSetup`, `ResponseStream` и т.д.), стартовать можно как crate-ready module внутри `codex-core`:
-
-```text
-codex-rs/core/src/chat_completions_adapter/
-  mod.rs
-  input_mapping.rs
-  output_mapping.rs
-  tool_mapping.rs
-  usage_mapping.rs
-  stream_emulation.rs
-  tests.rs
-```
-
-Требование к module fallback:
-
-```text
-Писать его так, чтобы позже вынести в отдельный crate без переписывания архитектуры.
-```
-
-Итоговая стратегия:
-
-```text
-1. Попробовать отдельный crate `gena-chat-completions-adapter`.
-2. Если это резко увеличивает public API/diff с upstream, стартовать с `codex-core/src/chat_completions_adapter/`.
-3. Сохранить crate-ready структуру и explicit TODO/roadmap на вынос в crate.
-```
+- изолирует Gena-specific logic от upstream-like Codex core;
+- снижает количество конфликтов при upstream update;
+- делает границу adapter-а явной;
+- не даёт размазать mapping по `codex-core/src/client.rs`, loop и tool executor;
+- упрощает contract/unit tests;
+- соответствует текущему workspace-направлению, где уже есть `gena-*` crates;
+- позволяет после upstream update чинить adapter boundary, а не весь agent loop.
 
 ## Что НЕ делать
 
@@ -113,6 +87,7 @@ Gena -> external proxy -> provider /v1/chat/completions
 отдельный Chat Completions tool executor
 hardcode только под llmops
 размазывание mapping по client.rs / loop / tool executor
+module fallback вместо отдельного crate
 ```
 
 ## Upstream-safe design
@@ -122,7 +97,7 @@ hardcode только под llmops
 Главный принцип:
 
 ```text
-Минимальная точка врезки в upstream-код + изолированный crate/module + contract tests.
+Минимальная точка врезки в upstream-код + отдельный Gena-owned crate + contract tests.
 ```
 
 Правильная форма:
@@ -131,7 +106,7 @@ hardcode только под llmops
 upstream-like ModelClient
   └── маленькая развилка по WireApi
         ├── existing Responses path untouched
-        └── call into Gena-owned adapter boundary
+        └── call into gena-chat-completions-adapter
 ```
 
 Неправильная форма:
@@ -144,19 +119,19 @@ upstream-like ModelClient
 
 1. `WireApi::Responses` path не менять, кроме минимальной развилки, если это технически необходимо.
 2. В `codex-rs/core/src/client.rs` держать только thin routing layer.
-3. Всю Chat Completions compatibility logic держать в `gena-chat-completions-adapter` crate или в crate-ready module fallback.
+3. Всю Chat Completions compatibility logic держать в `gena-chat-completions-adapter` crate.
 4. Не менять существующий tool executor.
 5. Не менять существующий Responses event loop.
 6. Не менять существующий Responses WebSocket path.
 7. Не добавлять Gena-specific логику в upstream-like участки без необходимости.
 8. Если требуется изменить общий тип (`ChatCompletionsRequestMessage`, `ChatCompletionsOutput`, `ResponseEvent`), изменение должно быть минимальным, generic и покрыто тестами.
 9. Adapter должен зависеть от stable boundary types:
-   - `Prompt`;
    - `ResponseItem`;
    - `ResponseEvent`;
    - `ResponseStream`;
    - `ToolSpec` / tool schema;
-   - `TokenUsage`.
+   - `TokenUsage`;
+   - минимальный explicit `AdapterInput`, сформированный в `codex-core`.
 10. Не завязывать adapter на внутренние детали конкретного provider, например только `llmops`.
 11. Все mapping-функции должны быть маленькими и покрыты unit tests.
 
@@ -175,12 +150,6 @@ upstream-like ModelClient
 
 ```text
 gena-chat-completions-adapter/*
-```
-
-или во временном fallback:
-
-```text
-codex-rs/core/src/chat_completions_adapter/*
 ```
 
 а не в:
@@ -215,7 +184,6 @@ codex-rs/Cargo.toml
 codex-rs/model-provider-info/src/lib.rs
 codex-rs/core/src/client.rs
 codex-rs/gena-chat-completions-adapter/*
-codex-rs/core/src/chat_completions_adapter/*  # fallback only
 codex-rs/codex-api/src/common.rs
 codex-rs/codex-api/src/endpoint/chat_completions.rs
 codex-rs/core/tests/suite/client.rs
@@ -238,47 +206,40 @@ codex-rs/core/tests/suite/client.rs
    - `codex-rs/codex-api/src/endpoint/chat_completions.rs`.
 5. Найти существующую генерацию tool schema для Responses API и оценить совместимость с Chat Completions.
 6. Проверить, как current loop добавляет tool result обратно в следующий model request.
-7. Проверить, какие boundary types можно использовать из отдельного crate без большого раскрытия private API.
-8. Принять решение:
-   - `gena-chat-completions-adapter` crate сразу;
-   - или `codex-core/src/chat_completions_adapter/` как временный crate-ready fallback.
+7. Определить минимальный `AdapterInput`, который `codex-core` будет передавать в `gena-chat-completions-adapter`, чтобы не раскрывать массово private upstream API.
 
-# Phase 1 — Crate / Module Boundary
+# Phase 1 — Create Crate Boundary
 
-1. Предпочтительно создать workspace crate:
+1. Создать workspace crate:
 
 ```text
 codex-rs/gena-chat-completions-adapter
 ```
 
-2. Добавить его в `codex-rs/Cargo.toml` workspace members и workspace dependencies.
-3. Подключить crate в `codex-core` как dependency.
-4. Если отдельный crate требует большого раскрытия приватных API, создать временный module fallback:
+2. Добавить его в `codex-rs/Cargo.toml` workspace members.
+3. Добавить его в `[workspace.dependencies]`.
+4. Подключить crate в `codex-core` как dependency.
+5. Создать структуру:
 
 ```text
-codex-rs/core/src/chat_completions_adapter/
-```
-
-5. Module fallback должен повторять будущую crate-структуру:
-
-```text
-mod.rs
-input_mapping.rs
-output_mapping.rs
-tool_mapping.rs
-usage_mapping.rs
-stream_emulation.rs
-tests.rs
+src/lib.rs
+src/input_mapping.rs
+src/output_mapping.rs
+src/tool_mapping.rs
+src/usage_mapping.rs
+src/stream_emulation.rs
+src/tests.rs
 ```
 
 6. Не смешивать adapter mapping с `client.rs`.
+7. Если возникают private API проблемы, решать их через минимальный `AdapterInput` / маленькие wrapper-типы, а не через module fallback.
 
 # Phase 2 — Wire API Routing
 
 1. Добавить явную развилку по `self.state.provider.info().wire_api`.
 2. Оставить существующий path для `WireApi::Responses` без изменения поведения.
 3. Ограничить WebSocket path только `WireApi::Responses`.
-4. Для `WireApi::ChatCompletions` направить выполнение в adapter через HTTP unary request.
+4. Для `WireApi::ChatCompletions` направить выполнение в `gena-chat-completions-adapter` через HTTP unary request.
 5. Не добавлять внешний shim/proxy.
 6. Добавить regression coverage, подтверждающую, что Responses path не ушёл в Chat Completions branch.
 7. Держать routing-код максимально тонким: route decision + вызов adapter entrypoint.
@@ -291,7 +252,7 @@ match self.state.provider.info().wire_api {
         // existing Responses path
     }
     WireApi::ChatCompletions => {
-        // Gena adapter path
+        // call gena_chat_completions_adapter
     }
 }
 ```
@@ -474,21 +435,21 @@ tracing::debug!("reasoning controls ignored for chat-completions wire api");
 4. Основной runtime path должен быть только такой:
 
 ```text
-Gena core -> adapter crate/module -> ChatCompletionsClient -> provider /v1/chat/completions
+Gena core -> gena-chat-completions-adapter -> ChatCompletionsClient -> provider /v1/chat/completions
 ```
 
 # Phase 10 — Upstream-safe Boundary Hardening
 
 1. Проверить, что изменения в upstream-like `client.rs` сведены к минимуму.
 2. Если возможно, оставить в `client.rs` только:
-   - import adapter crate/module;
+   - import adapter crate;
    - match по `WireApi`;
    - вызов adapter entrypoint.
 3. Вынести все mapping-функции из `client.rs`.
 4. Добавить комментарий рядом с routing-точкой:
 
 ```rust
-// Gena: keep Chat Completions compatibility isolated in adapter crate/module
+// Gena: keep Chat Completions compatibility isolated in gena-chat-completions-adapter
 // to reduce upstream merge conflicts. Do not add mapping logic here.
 ```
 
@@ -544,11 +505,10 @@ Gena core -> adapter crate/module -> ChatCompletionsClient -> provider /v1/chat/
 9. Есть unit tests на mapping.
 10. Есть хотя бы один mock integration test на full loop: `assistant tool_call -> tool result -> assistant final`.
 11. В runtime нет внешнего shim/proxy.
-12. Adapter изолирован в отдельном crate или crate-ready module fallback.
+12. Adapter изолирован в отдельном crate `gena-chat-completions-adapter`.
 13. Изменения в upstream-like files минимальны и локализованы.
 14. После upstream update ожидаемая зона ремонта — adapter mapping, а не agent loop/tool executor.
 15. Есть tests, которые защищают boundary adapter-а.
-16. Если adapter стартует как module fallback, есть явный путь миграции в `gena-chat-completions-adapter` crate.
 
 # Constraints
 
@@ -562,7 +522,8 @@ Gena core -> adapter crate/module -> ChatCompletionsClient -> provider /v1/chat/
 8. Не добавлять shim/proxy в рамках этой задачи.
 9. Не размазывать Chat Completions logic по upstream-like файлам.
 10. Не менять upstream-like код там, где достаточно adapter boundary.
-11. Не раскрывать массово private upstream API только ради crate; если требуется слишком большой public API diff, использовать crate-ready module fallback.
+11. Не использовать module fallback как план реализации; adapter должен быть отдельным crate.
+12. Если нужны private upstream-типы, создать минимальный `AdapterInput`/wrapper boundary, а не переносить adapter внутрь `codex-core`.
 
 # Desired final architecture
 
@@ -579,16 +540,10 @@ ModelClient
         └── Chat tool_calls -> existing tool executor
 ```
 
-Preferred code boundary:
+Required code boundary:
 
 ```text
 gena-chat-completions-adapter crate
-```
-
-Allowed temporary fallback:
-
-```text
-codex-core/src/chat_completions_adapter/ with crate-ready structure
 ```
 
 Главное правило:
