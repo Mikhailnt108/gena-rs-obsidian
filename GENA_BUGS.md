@@ -36,7 +36,7 @@
 
 ### 2026-05-13 — `0.130.0` post-merge debug gate
 
-Status: automated debug gate passed; manual TUI smoke pending.
+Status: automated debug gate passed; manual TUI smoke confirmed by user; release package/installer verified.
 
 Verified:
 - Branding regressions GENA-BUG-001..004 did not reproduce on `0.130.0` debug:
@@ -55,7 +55,7 @@ Verified:
 
 Residual:
 - GENA-BUG-014 remains `needs decision`: the documented real smoke still provides `LLMOPS_TOKEN` via env even though sidecar token exists.
-- Release package/installer for `0.130.0` remains pending until manual TUI smoke passes.
+- Release package/installer for `0.130.0` was built and verified from current `main`.
 
 ## Bugs
 

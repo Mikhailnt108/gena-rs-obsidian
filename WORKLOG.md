@@ -3888,3 +3888,45 @@
 - Pending:
   - manual TUI smoke with `/model` selection and one prompt;
   - release package and installer rebuild/verification.
+
+## 2026-05-13/14 — Release package and installer for 0.130.0
+- User confirmed manual TUI smoke passed:
+  - `gena-debug`;
+  - `/model`;
+  - full LLMOps catalog visible;
+  - model selection and one prompt checked manually.
+- Disk cleanup before release build:
+  - initial free space was about 6.9G on `/System/Volumes/Data`;
+  - removed `codex-rs/target` (~75G);
+  - removed old ignored `0.128.0` artifacts from `codex-rs/dist`;
+  - free space recovered to about 79G.
+- Release package command:
+  - `CARGO_BUILD_JOBS=4 scripts/package-gena-linux-macos.sh release`
+- Build result:
+  - PASS.
+  - `gena-tui` release build took about 30m.
+  - `gena` release build took about 22m.
+  - Non-blocking warnings observed:
+    - `codex-app-server` unused `LOGIN_ISSUER_OVERRIDE_ENV_VAR`;
+    - `codex-cli` unused import `gena_branding::current_cli_command_name` in `cli/src/main.rs`.
+- Package artifacts:
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64/`
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz` (138M)
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz.sha256`
+- Self-extract installer:
+  - `scripts/make-gena-self-extract.sh dist/gena-v0.130.0-macos-arm64.tar.gz` PASS.
+  - output: `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh` (184M).
+- Verification:
+  - `dist/gena-v0.130.0-macos-arm64/gena --version` -> `gena 0.130.0`;
+  - `dist/gena-v0.130.0-macos-arm64/gena-tui --version` -> `gena-tui 0.130.0`;
+  - sha256 actual and expected both:
+    - `a2c61cee47ae93d677b84e47e1132ec2ad131a9ef38d31ad807e5f3b67325159`;
+  - installer `--help` works;
+  - installer installed into a temp dir with `--install-dir <tmp> --no-path-hint`;
+  - temp wrappers returned:
+    - `gena 0.130.0`;
+    - `gena-tui 0.130.0`.
+- Repo state:
+  - code repo clean on `main...origin/main`;
+  - `codex-rs/dist` is gitignored, so release artifacts are local files, not committed;
+  - after build, free space was about 70G and `codex-rs/target` about 5.6G.

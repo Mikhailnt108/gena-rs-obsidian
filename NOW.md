@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Post-merge release path for Gena `0.130.0`.
+Gena `0.130.0` post-merge release package/installer built and verified.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -10,27 +10,27 @@ Post-merge release path for Gena `0.130.0`.
 - Upstream `rust-v0.130.0` is merged and pushed to `main`.
 - Full workspace gate passed on 2026-05-13:
   - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast -- --test-threads=1`
-- Debug build exists:
-  - `codex-rs/target/debug/gena-debug` -> `gena 0.130.0`
-  - `codex-rs/target/debug/gena-tui-debug` -> `gena-tui 0.130.0`
-- Debug install refreshed in `/opt/homebrew/bin`:
-  - `/opt/homebrew/bin/gena-debug` -> `gena 0.130.0`
-  - `/opt/homebrew/bin/gena` wrapper points to refreshed debug `gena.bin` -> `gena 0.130.0`
-  - `/opt/homebrew/bin/gena-tui` -> `gena-tui 0.130.0`
-- Shell `gena` without absolute path currently resolves first to `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`, which reports old `0.128.0`; use `gena-debug` or `/opt/homebrew/bin/gena` for the debug smoke path.
-- Automated Gena bug gates passed on 2026-05-13:
-  - branding CLI/TUI tests and live help checks;
-  - LLMOps model catalog HTTP 200 with `object=list` and 17 models;
-  - short `gena-debug exec` LLMOps smoke returned `OK`;
-  - tool-loop smoke executed a shell command before final answer;
-  - model/provider bootstrap tests;
-  - Chat Completions API tests;
-  - current `codex-core` Chat Completions tool-loop regression test;
-  - TUI sidecar token rejection test.
+- Debug build/install and automated Gena bug gates passed on 2026-05-13.
+- Manual TUI smoke was confirmed by user before release packaging:
+  - `gena-debug`;
+  - `/model`;
+  - LLMOps catalog visible;
+  - model selection and prompt checked manually.
+- Release package built from current `main`:
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64/`
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz`
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz.sha256`
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh`
+- Release verification passed:
+  - packaged `gena --version` -> `gena 0.130.0`;
+  - packaged `gena-tui --version` -> `gena-tui 0.130.0`;
+  - tarball sha256 matches `.sha256`;
+  - self-extract installer installed to a temp dir and wrappers reported `gena 0.130.0` / `gena-tui 0.130.0`.
+- Shell `gena` without absolute path still resolves first to `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`, which reports old `0.128.0`; use explicit `/opt/homebrew/bin/gena` or adjust PATH before release install checks.
+- Code repo is clean; `codex-rs/dist` artifacts are ignored by git.
 
 ## Blockers
-- Manual TUI smoke is still pending because it requires interactive `/model` selection and one prompt.
-- Release package/installer not rebuilt yet for `0.130.0`.
+- No blocker for local `0.130.0` release package/installer artifacts.
 
 ## Next Step
-Run manual TUI smoke with `gena-debug`: open `/model`, confirm full LLMOps catalog, select a model, send `привет`, then build and verify release package/installer.
+Decide whether to install the verified `0.130.0` release globally and whether to delete/archive old draft PR #1 plus branch `chore/upstream-rust-v0.130.0`.
