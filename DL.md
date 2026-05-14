@@ -4270,3 +4270,37 @@
 - Continue expanding phrase heuristics.
 - Force `tool_choice=required` for every unmarked response.
 - Accept plain assistant text as final and keep relying on user `и?` prompts.
+
+## 2026-05-15 — Chat Completions structural verdict должен жить в adapter до stream conversion
+**Решение:**
+- Классифицировать raw Chat Completions output внутри `gena-chat-completions-adapter` до создания `ResponseStream`.
+- Использовать явный verdict:
+  - `ToolAction`;
+  - `FinalAnswer`;
+  - `ContractViolation`;
+  - `MalformedToolCallMarkup`.
+- Создавать response stream только для валидных verdicts:
+  - `ToolAction`;
+  - `FinalAnswer`.
+- Передавать invalid verdicts в `codex-core` как raw output для repair retry или diagnostic path.
+
+**Причина:**
+- Предыдущий structural marker fix был поведенчески правильным, но архитектурно split:
+  - adapter уже строил stream;
+  - `client.rs` потом решал, можно ли этот stream использовать.
+- Это оставляло `end_turn=true` как generic mapping для no-FunctionCall output до contract verdict.
+- Adapter boundary является правильным местом для protocol adaptation: raw Chat Completions output сначала получает deterministic verdict, и только потом становится Responses-like stream.
+
+**Подтверждение:**
+- Code commit: `ad1b9c822e fix: classify chat completions before streaming`.
+- Tests:
+  - `cargo test -p gena-chat-completions-adapter`;
+  - `cargo test -p codex-core --test all chat_completions_unmarked_text_retries_with_structural_contract_repair`;
+  - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion`.
+- `just fmt` and `just fix -p gena-chat-completions-adapter -p codex-core` passed.
+- `gena-debug` rebuilt and resolves to `$HOME/.local/bin`.
+
+**Альтернативы:**
+- Keep structural marker checks in `client.rs`.
+- Let adapter always convert no-FunctionCall output to stream and rely on caller to discard invalid streams.
+- Remove final marker and return to phrase/action heuristics.

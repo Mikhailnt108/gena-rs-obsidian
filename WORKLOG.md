@@ -4168,3 +4168,26 @@
   - `gena-debug --version` -> `gena 0.130.0`;
   - `gena-tui-debug --version` -> `gena-tui 0.130.0`;
   - mtime for both debug commands: `2026-05-15 01:02:35`.
+
+## 2026-05-15 — Adapter-level Chat Completions verdict before stream
+- User pointed out that the previous structural fix still let `gena-chat-completions-adapter` build a response stream before `client.rs` decided whether no-tool text was valid.
+- Code commit:
+  - `ad1b9c822e fix: classify chat completions before streaming`.
+- Code update:
+  - added explicit `ChatCompletionsOutputVerdict` in `gena-chat-completions-adapter`;
+  - classified raw Chat Completions output before constructing a `ResponseStream`;
+  - only `ToolAction` and `FinalAnswer` verdicts are converted to streams;
+  - `ContractViolation` and `MalformedToolCallMarkup` return raw output to `codex-core` for repair retry or diagnostic handling;
+  - removed the `client.rs` helper composition around `contains_chat_function_call_markup` / final marker checks.
+- Validation:
+  - `cargo test -p gena-chat-completions-adapter` PASS;
+  - `cargo test -p codex-core --test all chat_completions_unmarked_text_retries_with_structural_contract_repair` PASS;
+  - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion` PASS;
+  - `just fmt` PASS;
+  - `just fix -p gena-chat-completions-adapter -p codex-core` PASS with existing non-fatal `expect_used` warning in `core/tests/suite/shell_command.rs`;
+  - `codex-rs/scripts/build-and-install-gena.sh debug` PASS.
+- Debug install verification:
+  - `which -a gena-debug gena-tui-debug` returns `$HOME/.local/bin` commands only;
+  - `gena-debug --version` -> `gena 0.130.0`;
+  - `gena-tui-debug --version` -> `gena-tui 0.130.0`;
+  - mtime for both debug commands: `2026-05-15 01:21:42`.
