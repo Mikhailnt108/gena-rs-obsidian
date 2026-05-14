@@ -314,6 +314,8 @@ Rule:
 - debug install must use explicit command names `gena-debug` and `gena-tui-debug`;
 - do not install debug binaries as `gena` or `gena-tui`;
 - release commands stay separate, so the shell command name always shows which build is being used.
+- before manual smoke, check all debug wrappers visible in `PATH`, not only the first `which` result;
+- if multiple `gena-debug` wrappers exist, update every location that may be launched by an existing shell session, especially `/opt/homebrew/bin` and `$HOME/.local/bin`.
 
 Build and install debug:
 
@@ -347,11 +349,25 @@ Wrapper `gena-debug` / `gena-tui-debug` should:
 Verify installed debug:
 
 ```bash
+type -a gena-debug
+type -a gena-tui-debug
 gena-debug --version
 gena-tui-debug --version
 which gena-debug
 which gena-tui-debug
 ```
+
+If `type -a` shows more than one wrapper, install debug into each active bin dir explicitly:
+
+```bash
+GENA_GLOBAL_BIN_DIR=/opt/homebrew/bin \
+  CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug
+
+GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" \
+  CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug
+```
+
+Do this before interpreting manual smoke results. Otherwise an old shell hash or an older wrapper can run a different debug binary than the one just built.
 
 ## Real LLMOps Smoke
 
