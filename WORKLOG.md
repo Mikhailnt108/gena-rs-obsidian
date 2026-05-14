@@ -1,5 +1,17 @@
 # WORKLOG
 
+## 2026-05-14 — GitHub workflows and local tasks listed
+- Пользователь попросил показать список `wf` и `tasks AAT`.
+- START SESSION выполнен:
+  - прочитаны `AGENTS.md`, `NOW.md`, `PROCESS.md`;
+  - code repo branch: `main`;
+  - code repo working tree: clean;
+  - latest commits inspected.
+- `gh workflow list` успешно вернул список активных GitHub Actions workflows.
+- `just --list` в `codex-rs/` успешно вернул список локальных recipes/tasks.
+- Поиск `AAT` в code repo не выявил отдельного task-каталога/именованного набора `AAT`; найденные task-файлы относятся к Rust-модулям и fixtures.
+- Кодовый репозиторий не изменялся; проверки/тесты не запускались.
+
 ## 2026-05-14 — GitHub workflows listed
 - Пользователь попросил показать список `wf`.
 - START SESSION выполнен:

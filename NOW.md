@@ -7,7 +7,7 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Work is on `main` only; no other git branches used.
-- Last session action was read-only: listed GitHub Actions workflows via `gh workflow list`.
+- Last session action was read-only: listed GitHub Actions workflows via `gh workflow list` and local `just --list` tasks.
 - Debug install naming rule added:
   - debug commands are `gena-debug` and `gena-tui-debug`;
   - debug binaries must not be installed as `gena` or `gena-tui`;
