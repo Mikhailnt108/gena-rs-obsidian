@@ -4062,3 +4062,20 @@
   - `19:17:16Z`: final message says "Давайте запустим полный анализ...", then `task_complete`;
   - `19:22:50Z`: final message says "Давайте откроем наше приложение:", then `task_complete`;
   - `19:24:38Z`: final message says "Теперь создам compose_evidence:", then `task_complete`.
+
+## 2026-05-14 — Chat Completions tool-call contract hardening
+- User rejected broader phrase heuristics/tests as the primary fix and approved:
+  - stronger Chat Completions instructions;
+  - visible diagnostic instead of false `task_complete`.
+- Code update:
+  - `gena-chat-completions-adapter` now appends a Chat Completions tool-call contract to system instructions when tools are available;
+  - the contract tells the model to return structured `tool_calls` whenever it needs to inspect/read/run/create/open/check/list/modify;
+  - continuation retry after action-preamble now sends `tool_choice = "required"` instead of `auto`;
+  - if the provider still returns action-preamble text without tool calls after retry, `codex-core` emits a visible diagnostic message and stops the loop instead of silently accepting false completion.
+- Validation:
+  - `just fmt` PASS;
+  - `cargo test -p gena-chat-completions-adapter` PASS;
+  - `cargo check -p codex-core` PASS;
+  - `just fix -p gena-chat-completions-adapter -p codex-core` PASS.
+- Note:
+  - `just fix` still reports the existing non-fatal `expect_used` warning in `core/tests/suite/shell_command.rs`; command exits 0.

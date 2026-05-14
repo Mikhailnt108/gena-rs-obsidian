@@ -4168,3 +4168,22 @@
 - Оставить mapping в `codex-core/src/client.rs`.
 - Делать runtime shim/proxy.
 - Делать отдельный Chat Completions agent loop/tool executor.
+
+## 2026-05-14 — Для Chat Completions loop hardening использовать contract + required retry
+**Решение:**
+- Не расширять основную эвристику распознавания рус/англ фраз как главный способ фикса agent loop.
+- Добавить системный Chat Completions tool-call contract, когда tools доступны.
+- После первого action-preamble без `tool_calls` делать continuation retry с `tool_choice="required"`.
+- Если после required retry provider снова возвращает action-preamble без `tool_calls`, показывать диагностическое сообщение и останавливать loop вместо ложного `task_complete`.
+
+**Причина:**
+- Реальная проблема: provider/model возвращал prose "сейчас сделаю" вместо structured Chat Completions `tool_calls`.
+- Prompt contract снижает вероятность неправильного поведения.
+- `tool_choice="required"` является протокольным принуждением provider/model к function calling, а не угадыванием по словам.
+- Диагностика делает несовместимость provider/model видимой, если required tool calling не сработает.
+
+**Альтернативы:**
+- Расширять regex/phrase heuristics для всех observed фраз.
+- Добавлять много tests на конкретные рус/англ preamble variants.
+- Автоматически конвертировать prose intent в synthetic tool call.
+- Считать plain-text preamble финальным ответом.

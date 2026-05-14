@@ -12,6 +12,10 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
   - root cause is premature `task_complete` after plain assistant messages without tool calls;
   - runtime logged `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false`;
   - observed `turn_aborted` events were user/input interrupts, not the main failure mode.
+- Chat Completions tool-call loop hardening added:
+  - tool-call contract appended to system instructions when tools are available;
+  - continuation retry after action-preamble uses `tool_choice="required"`;
+  - repeated action-preamble without `tool_calls` becomes a visible diagnostic instead of false `task_complete`.
 - Debug install naming rule added:
   - debug commands are `gena-debug` and `gena-tui-debug`;
   - debug binaries must not be installed as `gena` or `gena-tui`;
@@ -35,7 +39,8 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
   - `cargo test -p gena-chat-completions-adapter`;
   - `cargo test -p codex-api chat_completions`;
   - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion`;
-  - `just fix -p gena-chat-completions-adapter -p codex-api -p codex-core`.
+  - `just fix -p gena-chat-completions-adapter -p codex-api -p codex-core`;
+  - `just fix -p gena-chat-completions-adapter -p codex-core`.
 - `ROADMAP.md` now has a status checklist:
   - phases 0-11 complete;
   - phase 12 open for manual LLMOps validation and optional full workspace test.
