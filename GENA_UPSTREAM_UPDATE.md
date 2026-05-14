@@ -309,41 +309,48 @@ Must cover:
 
 ## Debug Build And Install
 
-Build:
+Rule:
+
+- debug install must use explicit command names `gena-debug` and `gena-tui-debug`;
+- do not install debug binaries as `gena` or `gena-tui`;
+- release commands stay separate, so the shell command name always shows which build is being used.
+
+Build and install debug:
 
 ```bash
-cd /Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project/codex-rs
-cargo build -p codex-cli --bin gena -p codex-tui --bin gena-tui -j1
+cd /Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project
+CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug
 ```
 
-Verify local debug:
+If `/usr/local/bin` is not writable, install into a user bin dir explicitly:
 
 ```bash
-target/debug/gena --version
-target/debug/gena-tui --version
+GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" \
+  CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug
 ```
 
-Install debug explicitly:
+Expected installed files:
 
 ```bash
-rm -f /opt/homebrew/bin/gena-debug.bin /opt/homebrew/bin/gena.bin
-cp target/debug/gena /opt/homebrew/bin/gena-debug.bin
-ln /opt/homebrew/bin/gena-debug.bin /opt/homebrew/bin/gena.bin
-chmod 0755 /opt/homebrew/bin/gena-debug.bin /opt/homebrew/bin/gena.bin
+gena-debug
+gena-debug.bin
+gena-tui-debug
+gena-tui-debug.bin
 ```
 
-Wrapper `/opt/homebrew/bin/gena-debug` should:
+Wrapper `gena-debug` / `gena-tui-debug` should:
 
-- set `CODEX_HOME="${GENA_CODEX_HOME:-${HOME}/.gena-codex}"` if empty;
+- set `CODEX_HOME="${HOME}/.gena-codex"` if empty;
 - `mkdir -p "$CODEX_HOME"`;
-- print that debug binary is running;
-- exec `/opt/homebrew/bin/gena-debug.bin`.
+- exec sibling `*.bin` binary.
 
 Verify installed debug:
 
 ```bash
 gena-debug --version
-stat -f '%Sm %N' /opt/homebrew/bin/gena-debug.bin /opt/homebrew/bin/gena.bin
+gena-tui-debug --version
+which gena-debug
+which gena-tui-debug
 ```
 
 ## Real LLMOps Smoke

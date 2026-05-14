@@ -7,6 +7,13 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Work is on `main` only; no other git branches used.
+- Debug install naming rule added:
+  - debug commands are `gena-debug` and `gena-tui-debug`;
+  - debug binaries must not be installed as `gena` or `gena-tui`;
+  - `codex-rs/scripts/build-and-install-gena.sh debug` supports `GENA_GLOBAL_BIN_DIR` for non-sudo install.
+- Installed and verified debug commands in `$HOME/.local/bin`:
+  - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
+  - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`.
 - First roadmap slice implemented:
   - new crate `codex-rs/gena-chat-completions-adapter`;
   - Chat Completions mapping moved out of `codex-core/src/client.rs`;
@@ -26,6 +33,7 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 
 ## Blockers
 - Full workspace `cargo test` not run; requires explicit user approval.
+- `/usr/local/bin` install requires write permission; verified non-sudo install via `$HOME/.local/bin`.
 
 ## Next Step
 Run manual LLMOps validation for Chat Completions wire API.

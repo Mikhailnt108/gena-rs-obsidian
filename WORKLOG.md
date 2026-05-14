@@ -1,5 +1,24 @@
 # WORKLOG
 
+## 2026-05-14 — Debug install commands separated as `gena-debug`
+- Пользователь попросил не путать debug и release сборки на машине.
+- Исправлен `codex-rs/scripts/build-and-install-gena.sh`:
+  - debug install создаёт команды `gena-debug` и `gena-tui-debug`;
+  - release install остаётся `gena-release` и `gena-tui-release`;
+  - убран `set -u` failure на пустом bash array в debug mode;
+  - добавлен `GENA_GLOBAL_BIN_DIR` override для установки без sudo, например в `$HOME/.local/bin`.
+- Code commit:
+  - `abfaedd7ef` — `fix: install gena debug commands explicitly`
+- Проверки:
+  - `bash -n codex-rs/scripts/build-and-install-gena.sh` PASS;
+  - `git diff --check` PASS в code repo;
+  - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug` PASS;
+  - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
+  - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`.
+- `GENA_UPSTREAM_UPDATE.md` обновлён правилом:
+  - debug install must use explicit command names `gena-debug` and `gena-tui-debug`;
+  - debug binaries must not be installed as `gena` or `gena-tui`.
+
 ## 2026-05-13 — Upstream 0.130.0 TUI snapshots accepted, full gate still load-sensitive
 - Продолжена подготовка branch `chore/upstream-rust-v0.130.0`.
 - Проверено состояние перед работой:

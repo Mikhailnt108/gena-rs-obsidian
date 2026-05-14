@@ -1,5 +1,33 @@
 # DL
 
+## 2026-05-14 — Debug-сборку Gena нельзя устанавливать под именем `gena`
+**Решение:**
+- Debug install должен создавать только явно debug-команды:
+  - `gena-debug`
+  - `gena-tui-debug`
+- Debug binaries не устанавливать под именами `gena` или `gena-tui`.
+- Release/install команды должны оставаться отдельными, чтобы по имени команды было понятно, какая сборка запускается.
+
+**Причина:**
+- На машине одновременно могут существовать debug и release сборки.
+- Если debug binary доступен как `gena`, легко случайно проверить не ту сборку и сделать неверный вывод о готовности release.
+- Явные имена команд дешевле и надёжнее, чем помнить внутренний target-dir или смотреть timestamp binary.
+
+**Подтверждение:**
+- `codex-rs/scripts/build-and-install-gena.sh debug` исправлен:
+  - debug mode больше не падает на пустом bash array под `set -u`;
+  - debug install пишет `gena-debug(.bin)` и `gena-tui-debug(.bin)`;
+  - добавлен `GENA_GLOBAL_BIN_DIR` override для установки без sudo.
+- Проверено через:
+  - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug`
+  - `$HOME/.local/bin/gena-debug --version`
+  - `$HOME/.local/bin/gena-tui-debug --version`
+
+**Альтернативы:**
+- Оставлять debug binary под именем `gena`.
+- Проверять build type только через `target/debug` path.
+- Полагаться на shell history или timestamp установленного binary.
+
 ## 2026-05-02 — `gena + llmops` release нельзя пересобирать раньше debug green path на реальном TUI
 **Решение:**
 - После повторных регрессов `llmops` больше не пересобирать release сразу после unit-level фикса.
