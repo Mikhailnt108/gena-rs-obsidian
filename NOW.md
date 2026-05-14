@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Gena `0.130.0` post-merge release package/installer built and verified.
+Gena `0.130.0` upstream update, debug/release validation, global install, and cleanup completed.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -10,27 +10,24 @@ Gena `0.130.0` post-merge release package/installer built and verified.
 - Upstream `rust-v0.130.0` is merged and pushed to `main`.
 - Full workspace gate passed on 2026-05-13:
   - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast -- --test-threads=1`
-- Debug build/install and automated Gena bug gates passed on 2026-05-13.
-- Manual TUI smoke was confirmed by user before release packaging:
-  - `gena-debug`;
-  - `/model`;
-  - LLMOps catalog visible;
-  - model selection and prompt checked manually.
-- Release package built from current `main`:
-  - `codex-rs/dist/gena-v0.130.0-macos-arm64/`
+- Debug build/install, automated Gena bug gates, real LLMOps smoke, and manual TUI smoke passed.
+- Release package/installer built and verified:
   - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz`
   - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz.sha256`
   - `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh`
-- Release verification passed:
-  - packaged `gena --version` -> `gena 0.130.0`;
-  - packaged `gena-tui --version` -> `gena-tui 0.130.0`;
-  - tarball sha256 matches `.sha256`;
-  - self-extract installer installed to a temp dir and wrappers reported `gena 0.130.0` / `gena-tui 0.130.0`.
-- Shell `gena` without absolute path still resolves first to `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`, which reports old `0.128.0`; use explicit `/opt/homebrew/bin/gena` or adjust PATH before release install checks.
+  - sha256: `a2c61cee47ae93d677b84e47e1132ec2ad131a9ef38d31ad807e5f3b67325159`
+- Verified release installed globally into first PATH bin:
+  - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`
+  - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena-tui`
+  - `gena --version` -> `gena 0.130.0`
+  - `gena-tui --version` -> `gena-tui 0.130.0`
+- Old draft PR #1 is already merged/closed:
+  - `https://github.com/Mikhailnt108/gena-rs-project/pull/1`
+- Old branch `chore/upstream-rust-v0.130.0` deleted from `origin` and local repo.
 - Code repo is clean; `codex-rs/dist` artifacts are ignored by git.
 
 ## Blockers
-- No blocker for local `0.130.0` release package/installer artifacts.
+- No active blocker for `0.130.0` delivery.
 
 ## Next Step
-Decide whether to install the verified `0.130.0` release globally and whether to delete/archive old draft PR #1 plus branch `chore/upstream-rust-v0.130.0`.
+Continue the next planned Gena work from `ROADMAP.md` / `TASKS/CODEX_CHAT_COMPLETIONS_COMPAT_ADAPTER.md`.

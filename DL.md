@@ -4083,3 +4083,30 @@
 - Продолжать через существующий draft PR #1.
 - Закрыть PR #1 сразу.
 - Мержить в `main` без полного локального gate.
+
+## 2026-05-14 — После verified release ставить `0.130.0` в первый PATH bin и чистить upstream branch
+**Решение:**
+- Установить verified release `0.130.0` глобально через self-extract installer в default install dir.
+- Default install dir принят как `npm prefix -g` bin:
+  - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`
+- Удалить старую branch `chore/upstream-rust-v0.130.0` после подтверждения, что PR #1 уже merged/closed.
+
+**Причина:**
+- До установки bare `gena` резолвился в nvm bin и показывал старый `0.128.0`, несмотря на свежий `/opt/homebrew/bin`.
+- Установка в первый PATH bin убирает ambiguity для обычных команд `gena` / `gena-tui`.
+- После fast-forward delivery в `main` отдельная upstream branch больше не нужна.
+
+**Подтверждение:**
+- `gena --version` -> `gena 0.130.0`
+- `gena-tui --version` -> `gena-tui 0.130.0`
+- PR #1:
+  - state `closed`;
+  - merged `true`;
+  - `https://github.com/Mikhailnt108/gena-rs-project/pull/1`
+- `origin/chore/upstream-rust-v0.130.0` deleted.
+- local `chore/upstream-rust-v0.130.0` deleted.
+
+**Альтернативы:**
+- Оставить `/opt/homebrew/bin` как единственный install target и править PATH отдельно.
+- Не удалять branch до следующего цикла.
+- Закрывать PR вручную, несмотря на already merged/closed state.

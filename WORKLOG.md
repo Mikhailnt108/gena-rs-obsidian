@@ -3930,3 +3930,35 @@
   - code repo clean on `main...origin/main`;
   - `codex-rs/dist` is gitignored, so release artifacts are local files, not committed;
   - after build, free space was about 70G and `codex-rs/target` about 5.6G.
+
+## 2026-05-14 — Global install and cleanup for 0.130.0
+- User requested:
+  - install verified `0.130.0` release globally;
+  - clean old draft PR and branch `chore/upstream-rust-v0.130.0`.
+- Global install:
+  - command: `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh --no-path-hint`;
+  - installer selected first PATH global bin from `npm prefix -g`:
+    - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`;
+  - installed:
+    - `gena`, `gena.bin`;
+    - `gena-tui`, `gena-tui.bin`.
+- Global install verification:
+  - `gena --version` -> `gena 0.130.0`;
+  - `gena-tui --version` -> `gena-tui 0.130.0`;
+  - `which gena` -> `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`;
+  - `which gena-tui` -> `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena-tui`.
+- GitHub cleanup:
+  - PR #1 checked through GitHub connector:
+    - state: `closed`;
+    - merged: `true`;
+    - URL: `https://github.com/Mikhailnt108/gena-rs-project/pull/1`;
+  - no PR close action needed because it was already merged/closed.
+- Branch cleanup:
+  - `git push origin --delete chore/upstream-rust-v0.130.0` PASS;
+  - `git branch -d chore/upstream-rust-v0.130.0` PASS;
+  - `git fetch --prune origin` PASS;
+  - local and remote branch lookups return empty.
+- Final code repo state:
+  - `main...origin/main`;
+  - clean worktree;
+  - head `2734ce9d5f`.
