@@ -4036,3 +4036,29 @@
   - `just fix -p codex-core -p gena-chat-completions-adapter -p codex-api` PASS.
 - Note:
   - `just fix` still reports an existing non-fatal clippy warning in `core/tests/suite/shell_command.rs` about `expect_used`; command exits 0 and this warning is unrelated to Chat Completions adapter work.
+
+## 2026-05-14 — Диагностика gena-debug agent loop по resume session
+- User requested:
+  - inspect `gena-debug codex resume 019e27de-430e-7152-bea1-850a2f7feb6b`;
+  - determine why the agent loop was breaking.
+- Correct log source:
+  - `gena-debug` uses `CODEX_HOME=$HOME/.gena-codex`;
+  - transcript: `$HOME/.gena-codex/sessions/2026/05/14/rollout-2026-05-14T22-02-18-019e27de-430e-7152-bea1-850a2f7feb6b.jsonl`;
+  - TUI log: `$HOME/.gena-codex/log/codex-tui.log`;
+  - SQLite log: `$HOME/.gena-codex/logs_2.sqlite`.
+- Finding:
+  - the loop mostly did not crash; Codex closed turns as `task_complete`;
+  - the model repeatedly emitted plain assistant text like "Now let me..." / "Давайте..." without a following tool call;
+  - runtime then logged `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false`;
+  - this made the turn complete even when the text semantically promised the next action.
+- Explicit aborts:
+  - `turn_aborted` occurred at `2026-05-14T19:05:33Z`, `19:11:10Z`, and `19:11:38Z`;
+  - these align with new user input/interrupts, not with a tool/runtime crash.
+- Not primary cause in this session:
+  - no decisive `stream disconnected before completion` failure was found for this thread;
+  - token limit was not reached in the inspected follow-up logs.
+- Examples of premature completion:
+  - `19:04:38Z`: final message says "Now let me get the compose tree...", then `task_complete`;
+  - `19:17:16Z`: final message says "Давайте запустим полный анализ...", then `task_complete`;
+  - `19:22:50Z`: final message says "Давайте откроем наше приложение:", then `task_complete`;
+  - `19:24:38Z`: final message says "Теперь создам compose_evidence:", then `task_complete`.

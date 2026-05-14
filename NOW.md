@@ -7,6 +7,11 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Work is on `main` only; no other git branches used.
+- `gena-debug` loop diagnostic for session `019e27de-430e-7152-bea1-850a2f7feb6b` completed:
+  - correct logs are under `$HOME/.gena-codex`, not `$HOME/.codex`;
+  - root cause is premature `task_complete` after plain assistant messages without tool calls;
+  - runtime logged `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false`;
+  - observed `turn_aborted` events were user/input interrupts, not the main failure mode.
 - Debug install naming rule added:
   - debug commands are `gena-debug` and `gena-tui-debug`;
   - debug binaries must not be installed as `gena` or `gena-tui`;
