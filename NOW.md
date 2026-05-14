@@ -14,6 +14,10 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 - Installed and verified debug commands in `$HOME/.local/bin`:
   - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
   - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`.
+- Also updated and verified `/opt/homebrew/bin/gena-debug` / `/opt/homebrew/bin/gena-tui-debug`.
+- Manual TUI validation reached `llmops` Chat Completions request path:
+  - `wire_api="chat-completions"`;
+  - endpoint `/v1/chat/completions`.
 - First roadmap slice implemented:
   - new crate `codex-rs/gena-chat-completions-adapter`;
   - Chat Completions mapping moved out of `codex-core/src/client.rs`;
@@ -34,6 +38,10 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 ## Blockers
 - Full workspace `cargo test` not run; requires explicit user approval.
 - `/usr/local/bin` install requires write permission; verified non-sudo install via `$HOME/.local/bin`.
+- Real LLMOps validation is blocked by network/TLS transport reset from this machine:
+  - `curl` to `https://devx-copilot.tech/v1/models` fails with `SSL_ERROR_SYSCALL`;
+  - `openssl s_client` fails with `write:errno=54`;
+  - TCP connection to port 443 succeeds.
 
 ## Next Step
 Run manual LLMOps validation for Chat Completions wire API.

@@ -18,6 +18,15 @@
 - `GENA_UPSTREAM_UPDATE.md` обновлён правилом:
   - debug install must use explicit command names `gena-debug` and `gena-tui-debug`;
   - debug binaries must not be installed as `gena` or `gena-tui`.
+- Дополнительная manual validation:
+  - `/opt/homebrew/bin/gena-debug` обновлён через `GENA_GLOBAL_BIN_DIR=/opt/homebrew/bin CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug`;
+  - `/opt/homebrew/bin/gena-debug --version` -> `gena 0.130.0`;
+  - `/opt/homebrew/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`;
+  - user TUI run дошёл до `provider=llmops wire_api="chat-completions" endpoint="/v1/chat/completions"`;
+  - запросы к `https://devx-copilot.tech` с этой машины сейчас падают до HTTP-ответа на TLS/transport layer:
+    - `curl` -> `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`;
+    - `openssl s_client` -> `write:errno=54`;
+    - `nc` до `devx-copilot.tech:443` проходит.
 
 ## 2026-05-13 — Upstream 0.130.0 TUI snapshots accepted, full gate still load-sensitive
 - Продолжена подготовка branch `chore/upstream-rust-v0.130.0`.
