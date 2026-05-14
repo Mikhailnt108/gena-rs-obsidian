@@ -4089,3 +4089,15 @@
   - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
   - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`;
   - current shell `PATH` resolves `gena-debug` to `/opt/homebrew/bin/gena-debug`, so the freshly rebuilt binary should be invoked by full path unless `PATH` is updated.
+
+## 2026-05-14 — Removed stale Homebrew debug commands
+- User requested fixing `PATH` so plain `gena-debug` uses the freshly rebuilt debug command.
+- Removed stale `/opt/homebrew/bin` debug files:
+  - `gena-debug`;
+  - `gena-debug.bin`;
+  - `gena-tui-debug`;
+  - `gena-tui-debug.bin`.
+- Verification:
+  - `which -a gena-debug gena-tui-debug` now returns only `$HOME/.local/bin` commands;
+  - `gena-debug --version` -> `gena 0.130.0`;
+  - `gena-tui-debug --version` -> `gena-tui 0.130.0`.
