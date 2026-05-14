@@ -4,6 +4,72 @@
 
 Цель: реализовать Chat Completions compatibility adapter для Responses-native agent loop в Gena CLI без отдельного agent loop, без shim/proxy, без поломки `WireApi::Responses` и с минимальным diff относительно upstream Codex.
 
+## Статус задач
+
+- [x] Phase 0 — Baseline Discovery:
+  - найдена текущая точка `WireApi` routing в `codex-rs/core/src/client.rs`;
+  - зафиксированы текущие `ResponseItem`, `ResponseEvent`, `ResponseStream`, `TokenUsage`;
+  - проверены существующие Chat Completions типы и `ChatCompletionsClient`.
+- [x] Phase 1 — Create Crate Boundary:
+  - создан workspace crate `codex-rs/gena-chat-completions-adapter`;
+  - добавлен в workspace members/dependencies;
+  - подключен в `codex-core`;
+  - создана структура `input_mapping`, `output_mapping`, `tool_mapping`, `usage_mapping`, `stream_emulation`, `tests`.
+- [x] Phase 2 — Wire API Routing:
+  - `WireApi::Responses` оставлен на existing Responses path;
+  - `WireApi::ChatCompletions` направлен через adapter crate;
+  - Responses WebSocket path остается только для `WireApi::Responses`;
+  - в `client.rs` добавлен комментарий о запрете mapping logic в routing-точке.
+- [x] Phase 3 — Adapter Skeleton:
+  - добавлен `AdapterInput`;
+  - добавлен `stream_chat_completions_as_responses`;
+  - non-stream Chat Completions response эмулируется как Responses-style stream.
+- [x] Phase 4 — Input Mapping:
+  - instructions -> `system`;
+  - user/assistant text -> `user`/`assistant`;
+  - assistant tool call -> `assistant.tool_calls`;
+  - tool output -> `role=tool` + `tool_call_id`;
+  - покрыто unit tests.
+- [x] Phase 5 — Tool Schema Mapping:
+  - `ToolSpec::Function` конвертируется в Chat Completions function tool schema;
+  - покрыто unit tests.
+- [x] Phase 6 — Output Mapping:
+  - Chat Completions content/tool_calls конвертируются в `ResponseEvent` stream;
+  - missing tool call id получает стабильный `chatcmpl-call-{index}`;
+  - invalid arguments не ломают adapter;
+  - покрыто unit tests.
+- [x] Phase 7 — Usage And Turn Boundary:
+  - usage маппится в `TokenUsage`;
+  - `end_turn=false` для tool calls, `true` без tool calls;
+  - покрыто unit tests.
+- [x] Phase 8 — Reasoning Downgrade:
+  - Responses-only controls не отправляются в Chat Completions request;
+  - добавлен debug trace об игнорировании reasoning controls.
+- [x] Phase 9 — No Shim/Proxy:
+  - runtime path: `Gena core -> gena-chat-completions-adapter -> ChatCompletionsClient -> /v1/chat/completions`;
+  - внешний shim/proxy не добавлен.
+- [x] Phase 10 — Upstream-safe Boundary Hardening:
+  - mapping вынесен из `codex-core/src/client.rs`;
+  - `client.rs` содержит только тонкий routing/client setup;
+  - добавлены adapter boundary tests.
+- [x] Phase 11 — Mock Integration Tests:
+  - обновлен mock full-loop test:
+    - assistant returns Chat Completions `tool_calls`;
+    - existing tool executor runs tool;
+    - next Chat Completions request contains `assistant.tool_calls`;
+    - next Chat Completions request contains `role=tool` + matching `tool_call_id`;
+    - model returns final answer.
+- [ ] Phase 12 — Validation:
+  - [x] `just fmt`;
+  - [x] `cargo check -p gena-chat-completions-adapter`;
+  - [x] `cargo check -p codex-core`;
+  - [x] `cargo test -p gena-chat-completions-adapter`;
+  - [x] `cargo test -p codex-api chat_completions`;
+  - [x] `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion`;
+  - [x] `just fix -p codex-core -p gena-chat-completions-adapter -p codex-api`;
+  - [ ] manual LLMOps validation;
+  - [ ] full workspace `cargo test` only with explicit user approval.
+
 ## Главный архитектурный выбор
 
 Выбираем **Вариант A — отдельный workspace crate**:

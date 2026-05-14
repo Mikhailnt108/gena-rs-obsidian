@@ -3986,3 +3986,25 @@
 - Pending:
   - add mock full-loop integration coverage for Chat Completions `tool_call -> tool result -> final`;
   - run real LLMOps manual validation after integration coverage is in place.
+
+## 2026-05-14 — Chat Completions full-loop test and roadmap checklist
+- User requested:
+  - continue `ROADMAP.md`;
+  - add a visible task list to `ROADMAP.md` showing done vs remaining work.
+- Code update:
+  - updated `codex-rs/core/tests/suite/client.rs` mock full-loop assertions to match canonical Chat Completions wire shape:
+    - assistant history uses `assistant.tool_calls`;
+    - tool result history uses `role=tool` and matching `tool_call_id`;
+    - no old XML-like `<tool_call>` / `<tool_result>` assertions remain in this test.
+- Obsidian update:
+  - added `## Статус задач` checklist to `ROADMAP.md`;
+  - marked phases 0-11 complete;
+  - Phase 12 remains open for manual LLMOps validation and optional full workspace test by explicit approval.
+- Validation:
+  - `just fmt` PASS;
+  - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion` PASS;
+  - `cargo test -p gena-chat-completions-adapter` PASS;
+  - `cargo test -p codex-api chat_completions` PASS;
+  - `just fix -p codex-core -p gena-chat-completions-adapter -p codex-api` PASS.
+- Note:
+  - `just fix` still reports an existing non-fatal clippy warning in `core/tests/suite/shell_command.rs` about `expect_used`; command exits 0 and this warning is unrelated to Chat Completions adapter work.

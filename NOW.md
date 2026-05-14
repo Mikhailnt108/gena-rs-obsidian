@@ -18,10 +18,14 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
   - `cargo check -p codex-core`;
   - `cargo test -p gena-chat-completions-adapter`;
   - `cargo test -p codex-api chat_completions`;
+  - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion`;
   - `just fix -p gena-chat-completions-adapter -p codex-api -p codex-core`.
+- `ROADMAP.md` now has a status checklist:
+  - phases 0-11 complete;
+  - phase 12 open for manual LLMOps validation and optional full workspace test.
 
 ## Blockers
 - Full workspace `cargo test` not run; requires explicit user approval.
 
 ## Next Step
-Add mock full-loop integration test for Chat Completions `tool_call -> tool result -> final`.
+Run manual LLMOps validation for Chat Completions wire API.
