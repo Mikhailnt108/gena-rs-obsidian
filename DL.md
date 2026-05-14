@@ -4110,3 +4110,33 @@
 - Оставить `/opt/homebrew/bin` как единственный install target и править PATH отдельно.
 - Не удалять branch до следующего цикла.
 - Закрывать PR вручную, несмотря на already merged/closed state.
+
+## 2026-05-14 — Chat Completions compatibility держать в отдельном Gena crate
+**Решение:**
+- Реализовывать Chat Completions compatibility через отдельный workspace crate:
+  - `codex-rs/gena-chat-completions-adapter`
+- В `codex-core/src/client.rs` оставить только:
+  - routing по `WireApi`;
+  - auth/retry/client setup;
+  - вызов adapter entrypoint.
+- Mapping input/tool/output/usage/stream держать внутри adapter crate.
+
+**Причина:**
+- Это соответствует `ROADMAP.md` и снижает future upstream merge surface.
+- Existing Responses loop, tool executor и WebSocket path не должны знать о Chat Completions internals.
+- Repair surface после upstream update должен быть adapter boundary, а не agent loop.
+
+**Подтверждение:**
+- `WireApi::Responses` branch в `ModelClientSession::stream` оставлен на существующем Responses path.
+- `WireApi::ChatCompletions` вызывает `gena_chat_completions_adapter::stream_chat_completions_as_responses`.
+- Adapter tests покрывают input/tool/output/usage mapping и stable fallback call id.
+- Validation passed:
+  - `cargo test -p gena-chat-completions-adapter`;
+  - `cargo test -p codex-api chat_completions`;
+  - `cargo check -p codex-core`;
+  - `just fix -p gena-chat-completions-adapter -p codex-api -p codex-core`.
+
+**Альтернативы:**
+- Оставить mapping в `codex-core/src/client.rs`.
+- Делать runtime shim/proxy.
+- Делать отдельный Chat Completions agent loop/tool executor.

@@ -3962,3 +3962,27 @@
   - `main...origin/main`;
   - clean worktree;
   - head `2734ce9d5f`.
+
+## 2026-05-14 — Chat Completions adapter crate boundary started
+- User requested continuing `ROADMAP.md` for Gena from `main` only.
+- Confirmed code repo and Obsidian repo were on `main...origin/main` before work.
+- Implemented first roadmap slice:
+  - added workspace crate `codex-rs/gena-chat-completions-adapter`;
+  - moved Chat Completions input/tool/output/usage/stream mapping out of `codex-core/src/client.rs`;
+  - kept `codex-core` Chat Completions path as thin routing/auth/retry/client setup;
+  - left `WireApi::Responses` path untouched;
+  - kept Responses WebSocket path limited to `WireApi::Responses`;
+  - added OpenAI-compatible Chat Completions request message support for `tool_call_id` and assistant `tool_calls`;
+  - added adapter unit tests for input mapping, tool schema mapping, output events, usage/end_turn, missing call id, and invalid arguments.
+- Validation:
+  - `just fmt` PASS;
+  - `cargo check -p gena-chat-completions-adapter` PASS;
+  - `cargo check -p codex-core` PASS;
+  - `cargo test -p gena-chat-completions-adapter` PASS;
+  - `cargo test -p codex-api chat_completions` PASS;
+  - `just fix -p gena-chat-completions-adapter -p codex-api -p codex-core` PASS.
+- Not run:
+  - full workspace `cargo test` because full test requires explicit user approval.
+- Pending:
+  - add mock full-loop integration coverage for Chat Completions `tool_call -> tool result -> final`;
+  - run real LLMOps manual validation after integration coverage is in place.

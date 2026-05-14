@@ -1,33 +1,27 @@
 # NOW
 
 ## Current Goal
-Gena `0.130.0` upstream update, debug/release validation, global install, and cleanup completed.
+Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
-- Code branch: `main`, synced with `origin/main`, head `2734ce9d5f`.
-- Upstream `rust-v0.130.0` is merged and pushed to `main`.
-- Full workspace gate passed on 2026-05-13:
-  - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=2 cargo test --workspace --all-targets --no-fail-fast -- --test-threads=1`
-- Debug build/install, automated Gena bug gates, real LLMOps smoke, and manual TUI smoke passed.
-- Release package/installer built and verified:
-  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz`
-  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz.sha256`
-  - `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh`
-  - sha256: `a2c61cee47ae93d677b84e47e1132ec2ad131a9ef38d31ad807e5f3b67325159`
-- Verified release installed globally into first PATH bin:
-  - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`
-  - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena-tui`
-  - `gena --version` -> `gena 0.130.0`
-  - `gena-tui --version` -> `gena-tui 0.130.0`
-- Old draft PR #1 is already merged/closed:
-  - `https://github.com/Mikhailnt108/gena-rs-project/pull/1`
-- Old branch `chore/upstream-rust-v0.130.0` deleted from `origin` and local repo.
-- Code repo is clean; `codex-rs/dist` artifacts are ignored by git.
+- Work is on `main` only; no other git branches used.
+- First roadmap slice implemented:
+  - new crate `codex-rs/gena-chat-completions-adapter`;
+  - Chat Completions mapping moved out of `codex-core/src/client.rs`;
+  - `codex-core` keeps thin `WireApi::ChatCompletions` routing/auth/retry/client setup;
+  - `WireApi::Responses` path remains untouched.
+- Validated:
+  - `just fmt`;
+  - `cargo check -p gena-chat-completions-adapter`;
+  - `cargo check -p codex-core`;
+  - `cargo test -p gena-chat-completions-adapter`;
+  - `cargo test -p codex-api chat_completions`;
+  - `just fix -p gena-chat-completions-adapter -p codex-api -p codex-core`.
 
 ## Blockers
-- No active blocker for `0.130.0` delivery.
+- Full workspace `cargo test` not run; requires explicit user approval.
 
 ## Next Step
-Continue the next planned Gena work from `ROADMAP.md` / `TASKS/CODEX_CHAT_COMPLETIONS_COMPAT_ADAPTER.md`.
+Add mock full-loop integration test for Chat Completions `tool_call -> tool result -> final`.
