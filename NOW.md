@@ -19,7 +19,9 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 - Debug install naming rule added:
   - debug commands are `gena-debug` and `gena-tui-debug`;
   - debug binaries must not be installed as `gena` or `gena-tui`;
-  - `codex-rs/scripts/build-and-install-gena.sh debug` supports `GENA_GLOBAL_BIN_DIR` for non-sudo install.
+  - `codex-rs/scripts/build-and-install-gena.sh debug` installs to `$HOME/.local/bin` by default;
+  - debug install refuses `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, and `/bin` unless `GENA_ALLOW_SYSTEM_DEBUG_INSTALL=1`;
+  - after debug install, the script fails if `PATH` resolves `gena-debug` / `gena-tui-debug` to another location.
 - Installed and verified debug commands in `$HOME/.local/bin`:
   - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
   - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`.

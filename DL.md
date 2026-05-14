@@ -4187,3 +4187,33 @@
 - Добавлять много tests на конкретные рус/англ preamble variants.
 - Автоматически конвертировать prose intent в synthetic tool call.
 - Считать plain-text preamble финальным ответом.
+
+## 2026-05-14 — Debug-команды Gena ставить user-local и fail-fast при PATH shadowing
+**Решение:**
+- Для `codex-rs/scripts/build-and-install-gena.sh debug` использовать `$HOME/.local/bin` как default install dir.
+- Запретить debug install в системные/PATH-priority директории:
+  - `/opt/homebrew/bin`;
+  - `/usr/local/bin`;
+  - `/usr/bin`;
+  - `/bin`.
+- Разрешить такой install только через явный override:
+  - `GENA_ALLOW_SYSTEM_DEBUG_INSTALL=1`.
+- После debug install проверять, что `gena-debug` и `gena-tui-debug` в `PATH` резолвятся в только что установленный target; иначе завершаться с ошибкой.
+
+**Причина:**
+- Старая debug-сборка в `/opt/homebrew/bin` перехватила plain `gena-debug`, хотя свежая сборка была установлена в `$HOME/.local/bin`.
+- Silent PATH shadowing делает ручную валидацию недостоверной.
+- Debug builds должны быть user-local и явно отличаться от release/system installs.
+
+**Подтверждение:**
+- `/opt/homebrew/bin` stale debug wrappers/binaries удалены.
+- `GENA_GLOBAL_BIN_DIR=/opt/homebrew/bin codex-rs/scripts/build-and-install-gena.sh debug` теперь падает до сборки с expected guard.
+- Обычный `codex-rs/scripts/build-and-install-gena.sh debug` устанавливает:
+  - `$HOME/.local/bin/gena-debug`;
+  - `$HOME/.local/bin/gena-tui-debug`.
+- `which -a gena-debug gena-tui-debug` возвращает только `$HOME/.local/bin`.
+
+**Альтернативы:**
+- Просто документировать, что нужно запускать `$HOME/.local/bin/gena-debug`.
+- Всегда удалять stale `/opt/homebrew/bin` файлы вручную.
+- Оставить `/usr/local/bin` default для debug и полагаться на PATH order.

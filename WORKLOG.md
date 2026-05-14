@@ -4101,3 +4101,18 @@
   - `which -a gena-debug gena-tui-debug` now returns only `$HOME/.local/bin` commands;
   - `gena-debug --version` -> `gena 0.130.0`;
   - `gena-tui-debug --version` -> `gena-tui 0.130.0`.
+
+## 2026-05-14 — Prevent future debug PATH shadowing
+- User requested preventing repeat issues where stale debug commands in `/opt/homebrew/bin` shadow fresh debug builds.
+- Code update:
+  - `codex-rs/scripts/build-and-install-gena.sh debug` now defaults global install to `$HOME/.local/bin`;
+  - `release` keeps `/usr/local/bin` default;
+  - debug install refuses `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, and `/bin` unless `GENA_ALLOW_SYSTEM_DEBUG_INSTALL=1`;
+  - after debug install, the script fails if `gena-debug` or `gena-tui-debug` resolves to another path on `PATH`.
+- Validation:
+  - `bash -n codex-rs/scripts/build-and-install-gena.sh` PASS;
+  - `GENA_GLOBAL_BIN_DIR=/opt/homebrew/bin codex-rs/scripts/build-and-install-gena.sh debug` fails before build with the expected guard;
+  - `codex-rs/scripts/build-and-install-gena.sh debug` PASS and installs to `$HOME/.local/bin`;
+  - `which -a gena-debug gena-tui-debug` returns only `$HOME/.local/bin`;
+  - `gena-debug --version` -> `gena 0.130.0`;
+  - `gena-tui-debug --version` -> `gena-tui 0.130.0`.
