@@ -1,5 +1,16 @@
 # WORKLOG
 
+## 2026-05-14 — GitHub workflows listed
+- Пользователь попросил показать список `wf`.
+- START SESSION выполнен:
+  - прочитаны `AGENTS.md`, `NOW.md`, `PROCESS.md`;
+  - code repo branch: `main`;
+  - code repo working tree: clean;
+  - latest commits inspected.
+- Локальный каталог `.github/workflows` в checkout отсутствует.
+- `gh workflow list` успешно вернул список активных GitHub Actions workflows.
+- Кодовый репозиторий не изменялся; проверки/тесты не запускались.
+
 ## 2026-05-14 — Debug install commands separated as `gena-debug`
 - Пользователь попросил не путать debug и release сборки на машине.
 - Исправлен `codex-rs/scripts/build-and-install-gena.sh`:
