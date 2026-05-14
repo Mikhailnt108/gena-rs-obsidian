@@ -4116,3 +4116,31 @@
   - `which -a gena-debug gena-tui-debug` returns only `$HOME/.local/bin`;
   - `gena-debug --version` -> `gena 0.130.0`;
   - `gena-tui-debug --version` -> `gena-tui 0.130.0`.
+
+## 2026-05-15 — Диагностика gena-debug loop по session 019e2825
+- User requested:
+  - run `codex resume 019e2825-0c1b-7101-ad60-71c56f0d18b0`;
+  - determine why the loop broke in that `gena-debug` session.
+- Resume check:
+  - plain `codex resume 019e2825-0c1b-7101-ad60-71c56f0d18b0` failed with `No saved session found`;
+  - `gena-debug resume 019e2825-0c1b-7101-ad60-71c56f0d18b0` found the session;
+  - resumed session cwd is `/Users/mntabunkov/AndroidStudioProjects/mtstv-android-v3`;
+  - transcript is `$HOME/.gena-codex/sessions/2026/05/14/rollout-2026-05-14T23-19-37-019e2825-0c1b-7101-ad60-71c56f0d18b0.jsonl`.
+- Version check:
+  - `$HOME/.local/bin/gena-debug` mtime is `2026-05-14 23:04:28`;
+  - tool-loop hardening commit `e9ae97cab8` is from `2026-05-14T22:41:30+03:00`;
+  - this session used a rebuilt debug binary that included the hardening.
+- Finding:
+  - the same structural failure remains: Chat Completions provider returned plain assistant prose instead of structured `tool_calls`;
+  - runtime closed turns when `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false`;
+  - examples:
+    - `20:43:51Z`: assistant said `**Шаг 7:** Устанавливаю battle mobile androidTest APK:`, then `task_complete`;
+    - `20:45:44Z`: assistant said `**Шаг 9:** Подтверждаю готовность battle mobile execution contour:`, then `task_complete`;
+    - `20:51:34Z`: assistant said `Выполняю анализ экрана через ui-agent path...:`, then `task_complete`;
+    - `20:52:08Z`: final summary completed normally after the user manually continued with `и?`.
+- Root cause refinement:
+  - the new action-preamble retry exists, but `looks_like_chat_action_preamble_without_tool_call` only catches text ending with `:` plus a small set of verbs/targets;
+  - observed Russian workflow phrases used verbs/targets outside that set, e.g. `Устанавливаю`, `Подтверждаю`, `анализ экрана`, `APK`;
+  - therefore the provider's incomplete action text bypassed the retry/diagnostic path and became a false `task_complete`.
+- Code changes:
+  - none in this session; this was diagnosis only.

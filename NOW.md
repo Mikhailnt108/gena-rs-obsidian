@@ -1,60 +1,28 @@
 # NOW
 
 ## Current Goal
-Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
+Stabilize Gena Chat Completions tool-call loop.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
-- Work is on `main` only; no other git branches used.
-- `gena-debug` loop diagnostic for session `019e27de-430e-7152-bea1-850a2f7feb6b` completed:
-  - correct logs are under `$HOME/.gena-codex`, not `$HOME/.codex`;
-  - root cause is premature `task_complete` after plain assistant messages without tool calls;
-  - runtime logged `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false`;
-  - observed `turn_aborted` events were user/input interrupts, not the main failure mode.
-- Chat Completions tool-call loop hardening added:
-  - tool-call contract appended to system instructions when tools are available;
-  - continuation retry after action-preamble uses `tool_choice="required"`;
-  - repeated action-preamble without `tool_calls` becomes a visible diagnostic instead of false `task_complete`.
-- Debug install naming rule added:
-  - debug commands are `gena-debug` and `gena-tui-debug`;
-  - debug binaries must not be installed as `gena` or `gena-tui`;
-  - `codex-rs/scripts/build-and-install-gena.sh debug` installs to `$HOME/.local/bin` by default;
-  - debug install refuses `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, and `/bin` unless `GENA_ALLOW_SYSTEM_DEBUG_INSTALL=1`;
-  - after debug install, the script fails if `PATH` resolves `gena-debug` / `gena-tui-debug` to another location.
-- Installed and verified debug commands in `$HOME/.local/bin`:
-  - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
-  - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`.
-- Removed stale debug wrappers/binaries from `/opt/homebrew/bin`;
-  current shell `PATH` resolves `gena-debug` and `gena-tui-debug` to `$HOME/.local/bin`.
-- Manual TUI validation reached `llmops` Chat Completions request path:
-  - `wire_api="chat-completions"`;
-  - endpoint `/v1/chat/completions`.
-- First roadmap slice implemented:
-  - new crate `codex-rs/gena-chat-completions-adapter`;
-  - Chat Completions mapping moved out of `codex-core/src/client.rs`;
-  - `codex-core` keeps thin `WireApi::ChatCompletions` routing/auth/retry/client setup;
-  - `WireApi::Responses` path remains untouched.
-- Validated:
-  - `just fmt`;
-  - `cargo check -p gena-chat-completions-adapter`;
-  - `cargo check -p codex-core`;
-  - `cargo test -p gena-chat-completions-adapter`;
-  - `cargo test -p codex-api chat_completions`;
-  - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion`;
-  - `just fix -p gena-chat-completions-adapter -p codex-api -p codex-core`;
-  - `just fix -p gena-chat-completions-adapter -p codex-core`.
-- `ROADMAP.md` now has a status checklist:
-  - phases 0-11 complete;
-  - phase 12 open for manual LLMOps validation and optional full workspace test.
+- Work is on `main`.
+- Chat Completions adapter crate exists at `codex-rs/gena-chat-completions-adapter`; `codex-core` keeps thin routing/client setup.
+- Existing hardening:
+  - tool-call contract is appended when tools are available;
+  - first detected action-preamble retries with `tool_choice="required"`;
+  - repeated detected action-preamble becomes visible diagnostic.
+- Debug commands resolve to `$HOME/.local/bin/gena-debug` and `$HOME/.local/bin/gena-tui-debug`.
+- Diagnostic for session `019e2825-0c1b-7101-ad60-71c56f0d18b0` completed:
+  - plain `codex resume` misses it because it lives in `$HOME/.gena-codex`;
+  - `gena-debug resume` finds it, cwd `/Users/mntabunkov/AndroidStudioProjects/mtstv-android-v3`;
+  - root cause is still Chat Completions plain assistant action text without `tool_calls`;
+  - the installed hardening did not catch phrases like `Устанавливаю ... APK:` / `Выполняю анализ экрана ...:`;
+  - runtime logged `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false`, then emitted `task_complete`.
 
 ## Blockers
 - Full workspace `cargo test` not run; requires explicit user approval.
-- `/usr/local/bin` install requires write permission; verified non-sudo install via `$HOME/.local/bin`.
-- Real LLMOps validation is blocked by network/TLS transport reset from this machine:
-  - `curl` to `https://devx-copilot.tech/v1/models` fails with `SSL_ERROR_SYSCALL`;
-  - `openssl s_client` fails with `write:errno=54`;
-  - TCP connection to port 443 succeeds.
+- Real LLMOps validation from this machine is still blocked by TLS reset to `https://devx-copilot.tech`.
 
 ## Next Step
-Run manual LLMOps validation for Chat Completions wire API.
+Fix Chat Completions incomplete-action detection beyond narrow phrase heuristics.

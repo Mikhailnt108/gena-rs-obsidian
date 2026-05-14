@@ -4217,3 +4217,25 @@
 - Просто документировать, что нужно запускать `$HOME/.local/bin/gena-debug`.
 - Всегда удалять stale `/opt/homebrew/bin` файлы вручную.
 - Оставить `/usr/local/bin` default для debug и полагаться на PATH order.
+
+## 2026-05-15 — Fix Chat Completions loop не должен опираться только на узкую phrase heuristic
+**Решение:**
+- Следующий fix для Chat Completions loop должен закрывать incomplete assistant action structurally, а не только добавлять отдельные рус/англ слова в `looks_like_chat_action_preamble_without_tool_call`.
+- Минимально нужно считать подозрительным plain assistant output без `tool_calls`, если он выглядит как незавершённый workflow/action step:
+  - заканчивается `:`;
+  - содержит step marker (`Шаг`, `Step`, numbered workflow/table step);
+  - или содержит action verbs/objects from workflow context such as install/confirm/analyze/screen/APK/evidence.
+- Такой случай должен попадать в existing retry with `tool_choice="required"` or visible diagnostic instead of false `task_complete`.
+
+**Причина:**
+- Session `019e2825-0c1b-7101-ad60-71c56f0d18b0` ran on rebuilt `gena-debug` that already included contract + required retry hardening.
+- The loop still broke because observed Russian workflow phrases were outside the narrow detector:
+  - `Устанавливаю ... APK:`;
+  - `Подтверждаю ... contour:`;
+  - `Выполняю анализ экрана ...:`.
+- Runtime then logged `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false` and emitted `task_complete`.
+
+**Альтернативы:**
+- Keep adding exact phrase variants to the current heuristic.
+- Rely only on prompt contract and provider `tool_choice="required"`.
+- Treat all plain assistant text ending with `:` as incomplete.
