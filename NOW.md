@@ -23,7 +23,8 @@ Implement Gena Chat Completions compatibility adapter from `ROADMAP.md`.
 - Installed and verified debug commands in `$HOME/.local/bin`:
   - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
   - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`.
-- Also updated and verified `/opt/homebrew/bin/gena-debug` / `/opt/homebrew/bin/gena-tui-debug`.
+- Current shell `PATH` still resolves `gena-debug` to `/opt/homebrew/bin/gena-debug`;
+  use `$HOME/.local/bin/gena-debug` for the freshly rebuilt binary unless `PATH` is changed.
 - Manual TUI validation reached `llmops` Chat Completions request path:
   - `wire_api="chat-completions"`;
   - endpoint `/v1/chat/completions`.

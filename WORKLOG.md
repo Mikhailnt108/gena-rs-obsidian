@@ -4079,3 +4079,13 @@
   - `just fix -p gena-chat-completions-adapter -p codex-core` PASS.
 - Note:
   - `just fix` still reports the existing non-fatal `expect_used` warning in `core/tests/suite/shell_command.rs`; command exits 0.
+
+## 2026-05-14 — Rebuilt gena-debug after tool-loop hardening
+- User asked whether `gena-debug` must be rebuilt after the Gena tool-loop changes.
+- Rebuild/install:
+  - `codex-rs/scripts/build-and-install-gena.sh debug` built successfully but could not install to `/usr/local/bin` because the directory requires write permission;
+  - reran with `GENA_GLOBAL_BIN_DIR=$HOME/.local/bin`, which installed `gena-debug` and `gena-tui-debug` successfully.
+- Verification:
+  - `$HOME/.local/bin/gena-debug --version` -> `gena 0.130.0`;
+  - `$HOME/.local/bin/gena-tui-debug --version` -> `gena-tui 0.130.0`;
+  - current shell `PATH` resolves `gena-debug` to `/opt/homebrew/bin/gena-debug`, so the freshly rebuilt binary should be invoked by full path unless `PATH` is updated.
