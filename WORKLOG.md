@@ -4144,3 +4144,27 @@
   - therefore the provider's incomplete action text bypassed the retry/diagnostic path and became a false `task_complete`.
 - Code changes:
   - none in this session; this was diagnosis only.
+
+## 2026-05-15 — Structural Chat Completions final-answer contract
+- User rejected phrase/word matching as the main fix and requested a deterministic structure.
+- Code commit:
+  - `9fd8534421 fix: enforce chat completions final marker`.
+- Code update:
+  - `gena-chat-completions-adapter` contract now requires final no-tool answers to be wrapped exactly as `<final_answer>...</final_answer>` when tools are available;
+  - `codex-core` no longer uses the action-preamble phrase heuristic;
+  - if a Chat Completions response has tools available but returns no `tool_calls`, no `<function_call>` markup, and no `<final_answer>` marker, Codex sends one contract repair retry;
+  - repair retry uses `tool_choice=auto`, so Qwen/glm can either call a tool or return a marked final answer;
+  - if the provider repeats unwrapped no-tool text, Codex emits a visible diagnostic instead of false `task_complete`;
+  - final marker is stripped before showing the final answer to the user.
+- Validation:
+  - `cargo test -p gena-chat-completions-adapter` PASS;
+  - `cargo test -p codex-core --test all chat_completions_unmarked_text_retries_with_structural_contract_repair` PASS;
+  - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion` PASS;
+  - `just fmt` PASS;
+  - `just fix -p gena-chat-completions-adapter -p codex-core` PASS with existing non-fatal `expect_used` warning in `core/tests/suite/shell_command.rs`;
+  - `codex-rs/scripts/build-and-install-gena.sh debug` PASS.
+- Debug install verification:
+  - `which -a gena-debug gena-tui-debug` returns `$HOME/.local/bin` commands only;
+  - `gena-debug --version` -> `gena 0.130.0`;
+  - `gena-tui-debug --version` -> `gena-tui 0.130.0`;
+  - mtime for both debug commands: `2026-05-15 01:02:35`.

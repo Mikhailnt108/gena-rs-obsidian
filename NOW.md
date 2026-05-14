@@ -1,28 +1,28 @@
 # NOW
 
 ## Current Goal
-Stabilize Gena Chat Completions tool-call loop.
+Validate Gena Chat Completions structural tool-call contract with real LLMOps models.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Work is on `main`.
-- Chat Completions adapter crate exists at `codex-rs/gena-chat-completions-adapter`; `codex-core` keeps thin routing/client setup.
-- Existing hardening:
-  - tool-call contract is appended when tools are available;
-  - first detected action-preamble retries with `tool_choice="required"`;
-  - repeated detected action-preamble becomes visible diagnostic.
-- Debug commands resolve to `$HOME/.local/bin/gena-debug` and `$HOME/.local/bin/gena-tui-debug`.
-- Diagnostic for session `019e2825-0c1b-7101-ad60-71c56f0d18b0` completed:
-  - plain `codex resume` misses it because it lives in `$HOME/.gena-codex`;
-  - `gena-debug resume` finds it, cwd `/Users/mntabunkov/AndroidStudioProjects/mtstv-android-v3`;
-  - root cause is still Chat Completions plain assistant action text without `tool_calls`;
-  - the installed hardening did not catch phrases like `Устанавливаю ... APK:` / `Выполняю анализ экрана ...:`;
-  - runtime logged `model_needs_follow_up=false`, `has_pending_input=false`, `needs_follow_up=false`, then emitted `task_complete`.
+- Chat Completions loop root cause:
+  - Qwen3.5 / glm-4.6 can return plain assistant text that promises work but has no `tool_calls`;
+  - Codex then sees no pending follow-up and emits false `task_complete`.
+- Implemented structural fix in code commit `9fd8534421`:
+  - with tools available, assistant text without `tool_calls` must be wrapped in `<final_answer>...</final_answer>`;
+  - unwrapped no-tool text triggers a contract repair retry instead of `task_complete`;
+  - repair retry uses `tool_choice=auto`, allowing either structured `tool_calls` or marked final answer;
+  - repeated unwrapped no-tool text becomes a visible diagnostic.
+- Rebuilt debug commands:
+  - `gena-debug` and `gena-tui-debug` resolve to `$HOME/.local/bin`;
+  - both report version `0.130.0`;
+  - current binary mtime is `2026-05-15 01:02:35`.
 
 ## Blockers
 - Full workspace `cargo test` not run; requires explicit user approval.
-- Real LLMOps validation from this machine is still blocked by TLS reset to `https://devx-copilot.tech`.
+- Real LLMOps validation may still be affected by intermittent TLS reset to `https://devx-copilot.tech`.
 
 ## Next Step
-Fix Chat Completions incomplete-action detection beyond narrow phrase heuristics.
+Run manual LLMOps validation on `Qwen3.5-397B-A17B-FP8` and `glm-4.6`.

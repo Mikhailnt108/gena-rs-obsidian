@@ -4239,3 +4239,34 @@
 - Keep adding exact phrase variants to the current heuristic.
 - Rely only on prompt contract and provider `tool_choice="required"`.
 - Treat all plain assistant text ending with `:` as incomplete.
+
+## 2026-05-15 — Для Chat Completions использовать структурный final-answer marker вместо phrase heuristic
+**Решение:**
+- Отказаться от word/phrase matching как основного способа определить incomplete action.
+- В Chat Completions mode, когда tools доступны, считать валидными только два типа assistant response:
+  - structured action: `tool_calls` или supported `<function_call>` markup;
+  - structured final: text wrapped as `<final_answer>...</final_answer>`.
+- Любой no-tool assistant text без `<final_answer>` считать protocol violation, а не финальным ответом.
+- На первое нарушение делать repair retry с `tool_choice=auto` и явной инструкцией:
+  - если задача завершена, вернуть `<final_answer>...</final_answer>`;
+  - если нужна локальная работа, вернуть structured `tool_calls`.
+- На повторное нарушение показывать diagnostic и не закрывать loop ложным `task_complete`.
+
+**Причина:**
+- Qwen3.5 и glm-4.6 ломали loop одинаково: возвращали prose вместо `tool_calls`.
+- Word matching плохо масштабируется на язык, стиль модели и доменный workflow text.
+- `tool_choice=required` не подходит как единственный repair, потому что unmarked text может быть настоящим финальным ответом.
+- Structural marker делает границу deterministic: финал явно помечен, действие явно структурировано, всё остальное является ошибкой protocol adaptation.
+
+**Подтверждение:**
+- Code commit: `9fd8534421 fix: enforce chat completions final marker`.
+- Tests:
+  - `cargo test -p gena-chat-completions-adapter`;
+  - `cargo test -p codex-core --test all chat_completions_unmarked_text_retries_with_structural_contract_repair`;
+  - `cargo test -p codex-core --test all chat_completions_text_before_tool_call_runs_tool_loop_to_completion`.
+- `gena-debug` rebuilt and resolves to `$HOME/.local/bin`.
+
+**Альтернативы:**
+- Continue expanding phrase heuristics.
+- Force `tool_choice=required` for every unmarked response.
+- Accept plain assistant text as final and keep relying on user `и?` prompts.
