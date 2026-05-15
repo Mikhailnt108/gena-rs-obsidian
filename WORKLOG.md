@@ -4191,3 +4191,23 @@
   - `gena-debug --version` -> `gena 0.130.0`;
   - `gena-tui-debug --version` -> `gena-tui 0.130.0`;
   - mtime for both debug commands: `2026-05-15 01:21:42`.
+
+## 2026-05-15 — Full cargo test after adapter verdict change
+- User approved full workspace test run.
+- Command:
+  - `cargo test` from `codex-rs/`.
+- Result:
+  - FAILED in `codex-app-server --test all`;
+  - summary for that suite: `485 passed; 4 failed; 1 ignored`.
+- Initial failures:
+  - `suite::v2::connection_handling_websocket_unix::websocket_transport_second_ctrl_c_forces_exit_while_turn_running`;
+  - `suite::v2::connection_handling_websocket_unix::websocket_transport_second_sigterm_forces_exit_while_turn_running`;
+  - `suite::v2::realtime_conversation::webrtc_v2_tool_call_delegated_turn_can_execute_shell_tool`;
+  - `suite::v2::turn_start::command_execution_notifications_include_process_id`.
+- Rerun:
+  - `cargo test -p codex-app-server --test all suite::v2::connection_handling_websocket_unix` PASS, 4 passed;
+  - `cargo test -p codex-app-server --test all suite::v2::realtime_conversation::webrtc_v2_tool_call_delegated_turn_can_execute_shell_tool` FAILED again with `deadline has elapsed`;
+  - `cargo test -p codex-app-server --test all suite::v2::turn_start::command_execution_notifications_include_process_id` FAILED again with `deadline has elapsed`.
+- Interpretation:
+  - failures are app-server websocket/realtime/command-notification timeout tests, not the Chat Completions adapter path;
+  - code repo remained clean after the run.

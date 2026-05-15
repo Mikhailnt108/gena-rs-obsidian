@@ -26,8 +26,10 @@ Validate adapter-level Gena Chat Completions verdict with real LLMOps models.
   - current binary mtime is `2026-05-15 01:21:42`.
 
 ## Blockers
-- Full workspace `cargo test` not run; requires explicit user approval.
+- Full workspace `cargo test` failed in unrelated `codex-app-server --test all` timeout tests:
+  - `webrtc_v2_tool_call_delegated_turn_can_execute_shell_tool`;
+  - `command_execution_notifications_include_process_id`.
 - Real LLMOps validation may still be affected by intermittent TLS reset to `https://devx-copilot.tech`.
 
 ## Next Step
-Run manual LLMOps validation on `Qwen3.5-397B-A17B-FP8` and `glm-4.6`.
+Decide whether to triage the two app-server timeout tests or proceed with manual LLMOps validation.
