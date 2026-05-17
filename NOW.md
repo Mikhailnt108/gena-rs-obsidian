@@ -7,6 +7,7 @@ Validate adapter-level Gena Chat Completions verdict with real LLMOps models.
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Work is on `main`.
+- Code `main` was pushed to `origin/main` on 2026-05-17.
 - Chat Completions loop root cause:
   - Qwen3.5 / glm-4.6 can return plain assistant text that promises work but has no `tool_calls`;
   - Codex then sees no pending follow-up and emits false `task_complete`.
@@ -24,6 +25,7 @@ Validate adapter-level Gena Chat Completions verdict with real LLMOps models.
   - `gena-debug` and `gena-tui-debug` resolve to `$HOME/.local/bin`;
   - both report version `0.130.0`;
   - current binary mtime is `2026-05-15 01:21:42`.
+- Latest pushed code commit: `ad1b9c822e`.
 
 ## Blockers
 - Full workspace `cargo test` failed in unrelated `codex-app-server --test all` timeout tests:

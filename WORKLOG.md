@@ -1,5 +1,25 @@
 # WORKLOG
 
+## 2026-05-17 — Chat Completions contract commits pushed
+- Завершена публикация текущей работы по adapter-level Gena Chat Completions verdict.
+- Code repo:
+  - branch `main`;
+  - pushed to `origin/main`;
+  - latest pushed commit `ad1b9c822e` — `fix: classify chat completions before streaming`.
+- Published code commits:
+  - `9fd8534421` — `fix: enforce chat completions final marker`;
+  - `ad1b9c822e` — `fix: classify chat completions before streaming`.
+- Состояние после push:
+  - structural final-answer contract реализован;
+  - raw Chat Completions output классифицируется adapter-ом до stream construction;
+  - unwrapped no-tool assistant text теперь уходит в contract repair retry / diagnostic вместо ложного `task_complete`.
+- Проверки, зафиксированные до публикации:
+  - debug commands `gena-debug` and `gena-tui-debug` rebuilt and resolve to `$HOME/.local/bin`;
+  - full workspace `cargo test` failed only on unrelated `codex-app-server --test all` timeout tests.
+- Следующий рабочий выбор остаётся прежним:
+  - triage app-server timeout tests;
+  - or proceed with manual real LLMOps validation.
+
 ## 2026-05-14 — Debug install commands separated as `gena-debug`
 - Пользователь попросил не путать debug и release сборки на машине.
 - Исправлен `codex-rs/scripts/build-and-install-gena.sh`:
