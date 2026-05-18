@@ -4304,3 +4304,24 @@
 - Keep structural marker checks in `client.rs`.
 - Let adapter always convert no-FunctionCall output to stream and rely on caller to discard invalid streams.
 - Remove final marker and return to phrase/action heuristics.
+
+## 2026-05-18 — AGENTS.md discovery is not the startup problem
+**Решение:**
+- Не менять Rust-код загрузки `AGENTS.md` по текущему симптому.
+- Считать подтвержденным, что локальный `gena` видит repo-root `AGENTS.md` и включает его в model-visible prompt input.
+- Если агент после первого пользовательского prompt не выполняет START SESSION из `AGENTS.md`, расследовать это как compliance/role-following проблему модели или адаптера, а не как file discovery failure.
+
+**Причина:**
+- `codex-rs/core/src/agents_md.rs` ищет `AGENTS.override.md`, затем `AGENTS.md` от git root до `cwd`.
+- В `gena-rs-project` файл существует, находится в git root и не превышает default `project_doc_max_bytes`.
+- `~/.gena-codex/config.toml` не отключает project docs.
+- Команда `gena debug prompt-input 'ping'` показала полный `AGENTS.md` блок и правильный `cwd`.
+- Открытие TUI само по себе не является model turn, поэтому START SESSION из `AGENTS.md` не может быть исполнен до первого обращения к модели.
+
+**Подтверждение:**
+- `gena debug prompt-input 'ping' | rg -n "AGENTS.md|START SESSION|NOW.md|PROCESS.md|gena-rs-project|environment_context|cwd"` PASS: блок `# AGENTS.md instructions for /Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project` присутствует.
+
+**Альтернативы:**
+- Перенести `AGENTS.md` из user-context в developer-context.
+- Добавить явный startup task при открытии TUI.
+- Оставить как есть и считать START SESSION обязанностью первого модельного хода после prompt.

@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Validate adapter-level Gena Chat Completions verdict with real LLMOps models.
+Validate Gena startup/context behavior and adapter-level Chat Completions verdicts.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -26,6 +26,10 @@ Validate adapter-level Gena Chat Completions verdict with real LLMOps models.
   - both report version `0.130.0`;
   - current binary mtime is `2026-05-15 01:21:42`.
 - Latest pushed code commit: `ad1b9c822e`.
+- AGENTS.md startup investigation on 2026-05-18:
+  - code repo `AGENTS.md` exists at repo root and is 5765 bytes;
+  - `gena debug prompt-input 'ping'` includes `# AGENTS.md instructions for /Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`;
+  - local discovery/loading works; opening TUI alone does not execute START SESSION because no model turn has started.
 
 ## Blockers
 - Full workspace `cargo test` failed in unrelated `codex-app-server --test all` timeout tests:
@@ -34,4 +38,4 @@ Validate adapter-level Gena Chat Completions verdict with real LLMOps models.
 - Real LLMOps validation may still be affected by intermittent TLS reset to `https://devx-copilot.tech`.
 
 ## Next Step
-Decide whether to triage the two app-server timeout tests or proceed with manual LLMOps validation.
+If AGENTS.md is still skipped after the first prompt, capture that live request/session as a model-compliance or adapter-following issue.

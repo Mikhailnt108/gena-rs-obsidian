@@ -4231,3 +4231,30 @@
 - Interpretation:
   - failures are app-server websocket/realtime/command-notification timeout tests, not the Chat Completions adapter path;
   - code repo remained clean after the run.
+
+## 2026-05-18 — AGENTS.md startup read investigation
+- User asked why `gena` appears not to read `AGENTS.md` when started in `gena-rs-project`.
+- START SESSION context was read:
+  - code `AGENTS.md`;
+  - Obsidian `NOW.md`;
+  - Obsidian `PROCESS.md`;
+  - code repo branch/status/log.
+- Code repo state:
+  - branch `main`;
+  - clean against `origin/main`;
+  - latest commits: `ad1b9c822e`, `9fd8534421`, `874b8bca57`, `e9ae97cab8`, `abfaedd7ef`.
+- Findings:
+  - `AGENTS.md` discovery is implemented in `codex-rs/core/src/agents_md.rs`;
+  - it searches from git root to `cwd`, prefers `AGENTS.override.md`, then `AGENTS.md`;
+  - project file exists at `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project/AGENTS.md`;
+  - file size is 5765 bytes, below default 32 KiB limit;
+  - `~/.gena-codex/config.toml` does not disable project docs.
+- Verification:
+  - `gena debug prompt-input 'ping' | rg -n "AGENTS.md|START SESSION|NOW.md|PROCESS.md|gena-rs-project|environment_context|cwd"` showed the full project `AGENTS.md` in model-visible input;
+  - prompt input also included correct `cwd` `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
+- Interpretation:
+  - discovery/loading works for local `gena`;
+  - likely confusion is behavioral: `AGENTS.md` is injected as user-context instructions for the first turn, but `gena` does not run model work or execute START SESSION merely by opening the TUI;
+  - if the model still skips START SESSION after the first prompt, that is model compliance/role-following, not missing file discovery.
+- Code changes:
+  - none.
