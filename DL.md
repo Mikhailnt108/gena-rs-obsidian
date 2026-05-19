@@ -1,5 +1,34 @@
 # DL
 
+## 2026-05-19 — Stale `0.130.0` release после Chat Completions фиксов нужно пересобирать из текущего `main`
+**Решение:**
+- Считать release `0.130.0` от `2026-05-14` устаревшим для текущего состояния `main`.
+- Пересобрать `gena-v0.130.0-macos-arm64` из текущего `main`, даже без bump версии, потому что локальный release artifact был собран до критичных Chat Completions фиксов.
+- После сборки пересоздать self-extract installer и установить fresh release в первый PATH bin через default installer path.
+
+**Причина:**
+- Старые release artifacts и installed binaries имели mtimes `2026-05-14`.
+- Последние Chat Completions fixes были сделаны позже:
+  - `e9ae97cab8`;
+  - `874b8bca57`;
+  - `9fd8534421`;
+  - `ad1b9c822e`.
+- Оставлять installed `gena 0.130.0` от 2026-05-14 означало запускать release без structural final-answer contract / adapter-level verdict boundary.
+
+**Подтверждение:**
+- Fresh artifacts созданы `2026-05-19 11:31-11:32 MSK`.
+- `shasum -a 256 -c dist/gena-v0.130.0-macos-arm64.tar.gz.sha256` PASS.
+- Packaged and temp-installed binaries report:
+  - `gena 0.130.0`;
+  - `gena-tui 0.130.0`.
+- Fresh release installed to `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`.
+- `gena --version` and `gena-tui --version` both report `0.130.0`; installed mtimes are `2026-05-19 11:33:25 MSK`.
+
+**Альтернативы:**
+- Оставить старый installed `0.130.0`, несмотря на отсутствие новых фиксов.
+- Делать version bump перед локальным rebuild.
+- Собирать только debug и откладывать release rebuild.
+
 ## 2026-05-14 — Debug-сборку Gena нельзя устанавливать под именем `gena`
 **Решение:**
 - Debug install должен создавать только явно debug-команды:

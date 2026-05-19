@@ -1,5 +1,51 @@
 # WORKLOG
 
+## 2026-05-19 — Fresh `0.130.0` release rebuilt from current `main`
+- User asked to verify whether a new Gena release had been built on 2026-05-18 evening.
+- Finding:
+  - no release artifacts existed after 2026-05-14;
+  - installed `gena` / `gena-tui` were also from 2026-05-14;
+  - therefore the installed release did not include later Chat Completions fixes:
+    - `e9ae97cab8` — `fix: harden chat completions tool loop`;
+    - `874b8bca57` — `fix: keep gena debug install user-local`;
+    - `9fd8534421` — `fix: enforce chat completions final marker`;
+    - `ad1b9c822e` — `fix: classify chat completions before streaming`.
+- Release rebuild:
+  - command: `CARGO_BUILD_JOBS=4 scripts/package-gena-linux-macos.sh release`;
+  - `gena-tui` release build finished in `16m 18s`;
+  - `gena` release build finished in `21m 25s`;
+  - known warnings only:
+    - duplicate bin target source warnings for `codex-tui` / `gena-tui` and `aqa-codex` / `codex` / `gena`;
+    - `LOGIN_ISSUER_OVERRIDE_ENV_VAR` dead-code warning;
+    - `unused import: gena_branding::current_cli_command_name` in `cli/src/main.rs`.
+- Fresh artifacts:
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64/` mtime `2026-05-19 11:31:48 MSK`;
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz` mtime `2026-05-19 11:31:59 MSK`, size `138M`;
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz.sha256` mtime `2026-05-19 11:31:59 MSK`;
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh` mtime `2026-05-19 11:32:23 MSK`, size `184M`.
+- Verification:
+  - `dist/gena-v0.130.0-macos-arm64/gena --version` -> `gena 0.130.0`;
+  - `dist/gena-v0.130.0-macos-arm64/gena-tui --version` -> `gena-tui 0.130.0`;
+  - `shasum -a 256 -c dist/gena-v0.130.0-macos-arm64.tar.gz.sha256` PASS;
+  - installer `--help` PASS;
+  - temp install smoke PASS:
+    - `gena 0.130.0`;
+    - `gena-tui 0.130.0`.
+- Global install:
+  - command: `dist/gena-v0.130.0-macos-arm64-installer.sh --no-path-hint`;
+  - installed to `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`;
+  - `command -v gena` -> `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`;
+  - `command -v gena-tui` -> `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena-tui`;
+  - `gena --version` -> `gena 0.130.0`;
+  - `gena-tui --version` -> `gena-tui 0.130.0`;
+  - installed wrapper/bin mtimes: `2026-05-19 11:33:25 MSK`.
+- Code repo:
+  - branch `main`;
+  - clean against `origin/main`;
+  - no code changes made in this session;
+  - `codex-rs/dist` artifacts are gitignored local files.
+- Full workspace `cargo test` was not rerun; next release confidence step is real LLMOps smoke on installed `gena 0.130.0`.
+
 ## 2026-05-17 — Chat Completions contract commits pushed
 - Завершена публикация текущей работы по adapter-level Gena Chat Completions verdict.
 - Code repo:

@@ -1,41 +1,40 @@
 # NOW
 
 ## Current Goal
-Validate Gena startup/context behavior and adapter-level Chat Completions verdicts.
+Validate fresh Gena `0.130.0` release built from current `main`.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Work is on `main`.
-- Code `main` was pushed to `origin/main` on 2026-05-17.
-- Chat Completions loop root cause:
-  - Qwen3.5 / glm-4.6 can return plain assistant text that promises work but has no `tool_calls`;
-  - Codex then sees no pending follow-up and emits false `task_complete`.
-- Implemented structural final-answer contract in code commit `9fd8534421`.
-- Refined it in code commit `ad1b9c822e`:
-  - raw Chat Completions output is classified by `gena-chat-completions-adapter` before stream construction;
-  - only `ToolAction` and `FinalAnswer` verdicts become response streams;
-  - `ContractViolation` and `MalformedToolCallMarkup` go to retry/diagnostic handling in `codex-core`.
-- Contract behavior:
-  - with tools available, assistant text without `tool_calls` must be wrapped in `<final_answer>...</final_answer>`;
-  - unwrapped no-tool text triggers a contract repair retry instead of `task_complete`;
-  - repair retry uses `tool_choice=auto`, allowing either structured `tool_calls` or marked final answer;
-  - repeated unwrapped no-tool text becomes a visible diagnostic.
-- Rebuilt debug commands:
-  - `gena-debug` and `gena-tui-debug` resolve to `$HOME/.local/bin`;
-  - both report version `0.130.0`;
-  - current binary mtime is `2026-05-15 01:21:42`.
-- Latest pushed code commit: `ad1b9c822e`.
-- AGENTS.md startup investigation on 2026-05-18:
-  - code repo `AGENTS.md` exists at repo root and is 5765 bytes;
-  - `gena debug prompt-input 'ping'` includes `# AGENTS.md instructions for /Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`;
-  - local discovery/loading works; opening TUI alone does not execute START SESSION because no model turn has started.
+- Code repo is clean against `origin/main`; latest code commit is `ad1b9c822e`.
+- Fresh release was rebuilt on 2026-05-19 from current `main`, including the Chat Completions contract fixes:
+  - `e9ae97cab8`;
+  - `874b8bca57`;
+  - `9fd8534421`;
+  - `ad1b9c822e`.
+- Fresh local artifacts:
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz` mtime `2026-05-19 11:31:59 MSK`;
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz.sha256` mtime `2026-05-19 11:31:59 MSK`;
+  - `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh` mtime `2026-05-19 11:32:23 MSK`.
+- Verification passed:
+  - packaged `gena --version` -> `gena 0.130.0`;
+  - packaged `gena-tui --version` -> `gena-tui 0.130.0`;
+  - `shasum -a 256 -c` PASS;
+  - installer `--help` PASS;
+  - temp install smoke PASS.
+- Fresh release installed to first PATH bin:
+  - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`;
+  - `gena --version` -> `gena 0.130.0`;
+  - `gena-tui --version` -> `gena-tui 0.130.0`;
+  - installed wrapper/bin mtimes are `2026-05-19 11:33:25 MSK`.
 
 ## Blockers
-- Full workspace `cargo test` failed in unrelated `codex-app-server --test all` timeout tests:
+- Full workspace `cargo test` was not rerun for the release rebuild.
+- Last known full workspace `cargo test` failed in unrelated `codex-app-server --test all` timeout tests:
   - `webrtc_v2_tool_call_delegated_turn_can_execute_shell_tool`;
   - `command_execution_notifications_include_process_id`.
 - Real LLMOps validation may still be affected by intermittent TLS reset to `https://devx-copilot.tech`.
 
 ## Next Step
-If AGENTS.md is still skipped after the first prompt, capture that live request/session as a model-compliance or adapter-following issue.
+Run a real LLMOps smoke on installed `gena 0.130.0`.
