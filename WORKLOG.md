@@ -4337,3 +4337,18 @@
   - `/System/Volumes/Data` free space increased to 89 GiB;
   - `/Users/mntabunkov/.cache` decreased to 12G;
   - code repo has no tracked changes.
+
+## 2026-05-24 — Gradle and user cache cleanup
+- User asked to delete `/Users/mntabunkov/.gradle` and `/Users/mntabunkov/.cache`.
+- Findings before deletion:
+  - `/System/Volumes/Data` had 89 GiB free;
+  - `/Users/mntabunkov/.gradle` was 54G;
+  - `/Users/mntabunkov/.cache` was 12G after prior LM Studio cleanup.
+- Action:
+  - deleted `/Users/mntabunkov/.gradle`;
+  - deleted `/Users/mntabunkov/.cache`;
+  - preserved `/Users/mntabunkov/.android` after user narrowed the request.
+- Result:
+  - `/System/Volumes/Data` free space increased to 155 GiB;
+  - `/Users/mntabunkov/.gradle` and `/Users/mntabunkov/.cache` no longer exist;
+  - code repo has no tracked changes.

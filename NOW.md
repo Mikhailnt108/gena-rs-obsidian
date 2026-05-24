@@ -31,7 +31,9 @@ Validate fresh Gena `0.130.0` release built from current `main`.
 - Local cleanup on 2026-05-24:
   - deleted `codex-rs/target` build cache, freeing disk from 13 GiB to 69 GiB available;
   - deleted `/Users/mntabunkov/.cache/lm-studio`, freeing disk from 76 GiB to 89 GiB available;
+  - deleted `/Users/mntabunkov/.gradle` and `/Users/mntabunkov/.cache`, freeing disk from 89 GiB to 155 GiB available;
   - preserved `codex-rs/dist/gena-v0.130.0-*` artifacts;
+  - preserved `/Users/mntabunkov/.android`;
   - installed `gena 0.130.0` and `gena-tui 0.130.0` still run from PATH.
 
 ## Blockers
