@@ -4323,3 +4323,17 @@
   - free disk increased to 69 GiB;
   - installed `gena 0.130.0` and `gena-tui 0.130.0` still run from `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`;
   - code repo has no tracked changes.
+
+## 2026-05-24 — LM Studio cache cleanup
+- User asked to inspect disk usage and then delete LM Studio cache only.
+- Findings before deletion:
+  - `/System/Volumes/Data` had 76 GiB free;
+  - `/Users/mntabunkov/.cache/lm-studio` was 13G;
+  - `/Users/mntabunkov/.cache` was 25G.
+- Action:
+  - deleted `/Users/mntabunkov/.cache/lm-studio`;
+  - did not delete `sccache` or other caches after user narrowed the request.
+- Result:
+  - `/System/Volumes/Data` free space increased to 89 GiB;
+  - `/Users/mntabunkov/.cache` decreased to 12G;
+  - code repo has no tracked changes.
