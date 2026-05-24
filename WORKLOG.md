@@ -4304,3 +4304,22 @@
   - if the model still skips START SESSION after the first prompt, that is model compliance/role-following, not missing file discovery.
 - Code changes:
   - none.
+
+## 2026-05-24 — Local build cache cleanup
+- User asked to inspect remaining memory/disk and largest files in `gena-rs-project`.
+- Findings:
+  - RAM pressure was healthy: `memory_pressure` reported 71% free;
+  - disk was nearly full: `/System/Volumes/Data` had 13 GiB free, 98% used;
+  - largest repo path was `codex-rs/target` at 61G;
+  - `codex-rs/dist` was 644M and contained the preserved `gena-v0.130.0` release artifacts.
+- User explicitly requested not to delete the `gena 0.130.0` build artifacts in `codex-rs/dist`.
+- Action:
+  - verified installed commands before cleanup:
+    - `gena --version` -> `gena 0.130.0`;
+    - `gena-tui --version` -> `gena-tui 0.130.0`;
+  - deleted `codex-rs/target`;
+  - left `codex-rs/dist/gena-v0.130.0-*` intact.
+- Result:
+  - free disk increased to 69 GiB;
+  - installed `gena 0.130.0` and `gena-tui 0.130.0` still run from `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`;
+  - code repo has no tracked changes.

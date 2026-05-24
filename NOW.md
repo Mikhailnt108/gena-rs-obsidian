@@ -28,6 +28,10 @@ Validate fresh Gena `0.130.0` release built from current `main`.
   - `gena --version` -> `gena 0.130.0`;
   - `gena-tui --version` -> `gena-tui 0.130.0`;
   - installed wrapper/bin mtimes are `2026-05-19 11:33:25 MSK`.
+- Local cleanup on 2026-05-24:
+  - deleted `codex-rs/target` build cache, freeing disk from 13 GiB to 69 GiB available;
+  - preserved `codex-rs/dist/gena-v0.130.0-*` artifacts;
+  - installed `gena 0.130.0` and `gena-tui 0.130.0` still run from PATH.
 
 ## Blockers
 - Full workspace `cargo test` was not rerun for the release rebuild.
