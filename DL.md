@@ -1,5 +1,32 @@
 # DL
 
+## 2026-05-24 — `rust-v0.133.0` merge можно держать в local `main`, но live LLMOps smoke не считать зелёным при TLS/transport failure
+**Решение:**
+- Считать upstream merge `rust-v0.133.0` технически интегрированным в local `main` после зелёных targeted Codex/Gena gates и debug build.
+- Не считать real LLMOps smoke пройденным, пока `https://devx-copilot.tech` недоступен с машины на TLS/transport layer.
+- Не классифицировать текущий `gena-debug exec` failure как Gena regression без успешного HTTP-доступа к LLMOps endpoint.
+
+**Причина:**
+- Независимый catalog `curl` к `https://devx-copilot.tech/v1/models` падает до HTTP-ответа:
+  - `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`.
+- `gena-debug exec` доходит до runtime и делает retry 5/5, но все попытки завершаются transport error:
+  - `error sending request for url (https://devx-copilot.tech/v1/chat/completions)`.
+- В captured events не обнаружены известные contract failures:
+  - `System message must be at the beginning`;
+  - `OutputTextDelta without active item`;
+  - panic/backtrace.
+
+**Подтверждение:**
+- `main` fast-forwarded to `bcc8041867` — `Merge upstream Codex rust-v0.133.0`.
+- Targeted tests and `gena-debug` build/install passed.
+- `gena-debug --version` reports `gena 0.133.0`.
+- `gena-tui-debug --version` reports `gena-tui 0.133.0`.
+
+**Альтернативы:**
+- Считать live smoke failed as a Gena bug immediately.
+- Блокировать merge commit entirely until external endpoint is reachable.
+- Push local `main` before rerunning live LLMOps smoke.
+
 ## 2026-05-19 — Stale `0.130.0` release после Chat Completions фиксов нужно пересобирать из текущего `main`
 **Решение:**
 - Считать release `0.130.0` от `2026-05-14` устаревшим для текущего состояния `main`.

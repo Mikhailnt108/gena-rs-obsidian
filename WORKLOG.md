@@ -1,5 +1,51 @@
 # WORKLOG
 
+## 2026-05-24 — Upstream Codex `rust-v0.133.0` merged into Gena `main`
+- User requested:
+  - update upstream Codex to `0.133.0`;
+  - resolve conflicts;
+  - test Codex and Gena;
+  - merge into `main`;
+  - build and check `gena-debug`.
+- Code repo:
+  - created local branch `chore/upstream-rust-v0.133.0`;
+  - fetched upstream tag `rust-v0.133.0` (`9474e5cfc4`);
+  - merged and resolved conflicts;
+  - fast-forwarded `main` to merge commit `bcc8041867` — `Merge upstream Codex rust-v0.133.0`.
+- Main compatibility resolutions:
+  - kept Gena workspace crates while accepting upstream version `0.133.0`;
+  - adapted `ModelInfo` construction to upstream `default_service_tier`;
+  - preserved non-ChatGPT LLMOps model catalog path in `models-manager`;
+  - updated `gena-runtime` for new `ThreadManager`, `EnvironmentManager`, `ThreadSettings`, and ChatGPT workspace APIs;
+  - updated TUI tests for moved input queue APIs and new `strict_config` field;
+  - removed stale `include_apply_patch_tool` test config field after upstream moved apply-patch availability to model metadata.
+- Checks passed:
+  - `cargo metadata --format-version 1 --no-deps`;
+  - `CARGO_BUILD_JOBS=4 cargo check -p codex-cli -p codex-tui -p codex-exec -p codex-models-manager`;
+  - `just fix -p codex-api -p codex-model-provider -p codex-models-manager -p gena-upstream-adapter -p gena-runtime -p codex-tui -p codex-cli -p codex-exec`;
+  - `just fmt`;
+  - `git diff --check`;
+  - `cargo test -p codex-api parses`;
+  - `cargo test -p codex-models-manager refresh_available_models`;
+  - `cargo test -p gena-runtime`;
+  - `cargo test -p codex-cli top_level_`;
+  - `cargo test -p codex-tui top_level_`;
+  - `cargo test -p codex-tui store_prompted_provider_token --lib`;
+  - `RUST_MIN_STACK=16777216 CARGO_BUILD_JOBS=4 cargo test -p codex-core --test all suite::client::chat_completions_text_before_tool_call_runs_tool_loop_to_completion -- --nocapture`.
+- Debug install:
+  - `CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug` PASS;
+  - installed `/Users/mntabunkov/.local/bin/gena-debug` -> `gena 0.133.0`;
+  - installed `/Users/mntabunkov/.local/bin/gena-tui-debug` -> `gena-tui 0.133.0`;
+  - help/version smoke passed for both commands.
+- Real LLMOps smoke:
+  - sidecar token exists at `~/.gena-codex/provider_tokens/LLMOPS_TOKEN`;
+  - catalog `curl` to `https://devx-copilot.tech/v1/models` failed before HTTP with `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`;
+  - `gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ... 'Ответь ровно одним словом: OK'` reached runtime, retried 5/5, then failed with `error sending request for url (https://devx-copilot.tech/v1/chat/completions)`;
+  - no panic/backtrace or known Chat Completions contract errors were observed in the captured events.
+- Notes:
+  - full workspace `cargo test` was not rerun after the merge;
+  - code `main` is local and not pushed yet.
+
 ## 2026-05-19 — Fresh `0.130.0` release rebuilt from current `main`
 - User asked to verify whether a new Gena release had been built on 2026-05-18 evening.
 - Finding:

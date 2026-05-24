@@ -1,33 +1,37 @@
 # NOW
 
 ## Current Goal
-Validate fresh Gena `0.130.0` release built from current `main`.
+Validate upstream Codex `rust-v0.133.0` merge on Gena `main`.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
 - Obsidian vault: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-obsidian`.
 - Work is on `main`.
-- Code repo is clean against `origin/main`; latest code commit is `ad1b9c822e`.
-- Fresh release was rebuilt on 2026-05-19 from current `main`, including the Chat Completions contract fixes:
-  - `e9ae97cab8`;
-  - `874b8bca57`;
-  - `9fd8534421`;
-  - `ad1b9c822e`.
-- Fresh local artifacts:
-  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz` mtime `2026-05-19 11:31:59 MSK`;
-  - `codex-rs/dist/gena-v0.130.0-macos-arm64.tar.gz.sha256` mtime `2026-05-19 11:31:59 MSK`;
-  - `codex-rs/dist/gena-v0.130.0-macos-arm64-installer.sh` mtime `2026-05-19 11:32:23 MSK`.
-- Verification passed:
-  - packaged `gena --version` -> `gena 0.130.0`;
-  - packaged `gena-tui --version` -> `gena-tui 0.130.0`;
-  - `shasum -a 256 -c` PASS;
-  - installer `--help` PASS;
-  - temp install smoke PASS.
-- Fresh release installed to first PATH bin:
-  - `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin`;
-  - `gena --version` -> `gena 0.130.0`;
-  - `gena-tui --version` -> `gena-tui 0.130.0`;
-  - installed wrapper/bin mtimes are `2026-05-19 11:33:25 MSK`.
+- Code repo latest local commit:
+  - `bcc8041867` — `Merge upstream Codex rust-v0.133.0`.
+- Upstream tag merged:
+  - `rust-v0.133.0` (`9474e5cfc4`).
+- Merge branch retained locally:
+  - `chore/upstream-rust-v0.133.0`.
+- Local debug install built from `main` on 2026-05-24:
+  - `/Users/mntabunkov/.local/bin/gena-debug` -> `gena 0.133.0`;
+  - `/Users/mntabunkov/.local/bin/gena-tui-debug` -> `gena-tui 0.133.0`;
+  - copies also written to `/Users/mntabunkov/download/`.
+- Verification passed for the merge:
+  - `cargo metadata --format-version 1 --no-deps`;
+  - `CARGO_BUILD_JOBS=4 cargo check -p codex-cli -p codex-tui -p codex-exec -p codex-models-manager`;
+  - `just fix -p codex-api -p codex-model-provider -p codex-models-manager -p gena-upstream-adapter -p gena-runtime -p codex-tui -p codex-cli -p codex-exec`;
+  - `just fmt`;
+  - `git diff --check`;
+  - `cargo test -p codex-api parses`;
+  - `cargo test -p codex-models-manager refresh_available_models`;
+  - `cargo test -p gena-runtime`;
+  - `cargo test -p codex-cli top_level_`;
+  - `cargo test -p codex-tui top_level_`;
+  - `cargo test -p codex-tui store_prompted_provider_token --lib`;
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-core --test all suite::client::chat_completions_text_before_tool_call_runs_tool_loop_to_completion -- --nocapture`;
+  - `CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug`;
+  - `gena-debug --version`, `gena-debug --help`, `gena-tui-debug --version`, `gena-tui-debug --help`.
 - Local cleanup on 2026-05-24:
   - deleted `codex-rs/target` build cache, freeing disk from 13 GiB to 69 GiB available;
   - deleted `/Users/mntabunkov/.cache/lm-studio`, freeing disk from 76 GiB to 89 GiB available;
@@ -37,11 +41,13 @@ Validate fresh Gena `0.130.0` release built from current `main`.
   - installed `gena 0.130.0` and `gena-tui 0.130.0` still run from PATH.
 
 ## Blockers
-- Full workspace `cargo test` was not rerun for the release rebuild.
-- Last known full workspace `cargo test` failed in unrelated `codex-app-server --test all` timeout tests:
-  - `webrtc_v2_tool_call_delegated_turn_can_execute_shell_tool`;
-  - `command_execution_notifications_include_process_id`.
-- Real LLMOps validation may still be affected by intermittent TLS reset to `https://devx-copilot.tech`.
+- Code repo local `main` is not pushed yet.
+- Obsidian repo was already ahead of `origin/main` before this session and remains local until pushed.
+- Full workspace `cargo test` was not rerun after the `0.133.0` merge; targeted Codex/Gena gates passed.
+- Real LLMOps smoke is blocked by transport/TLS to `https://devx-copilot.tech` from this machine:
+  - catalog `curl` fails before HTTP with `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`;
+  - `gena-debug exec --oss --local-provider llmops ...` retries 5/5 and fails with `error sending request for url (https://devx-copilot.tech/v1/chat/completions)`;
+  - no panic/backtrace, no `System message must be at the beginning`, no `OutputTextDelta without active item` observed.
 
 ## Next Step
-Run a real LLMOps smoke on installed `gena 0.130.0`.
+When `devx-copilot.tech` is reachable again, rerun real LLMOps catalog + `gena-debug exec` smoke on installed `0.133.0`, then push code/Obsidian if green.
