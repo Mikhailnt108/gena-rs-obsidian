@@ -14,6 +14,8 @@ Validate upstream Codex `rust-v0.133.0` merge on Gena `main`.
   - Gena startup/session header now uses product display name instead of hardcoded `OpenAI Codex`;
   - `/quit` and `/exit` descriptions now say `exit Gena` under Gena entrypoints;
   - `gena-debug exec` human config banner now uses product display name.
+- 2026-05-25 branding hotfix pushed to `origin/main`:
+  - `4fd1181d3e` — `fix: use Gena branding in startup and exit UI`.
 - Upstream tag merged:
   - `rust-v0.133.0` (`9474e5cfc4`).
 - Merge branch retained locally:
@@ -59,8 +61,6 @@ Validate upstream Codex `rust-v0.133.0` merge on Gena `main`.
   - installed `gena 0.130.0` and `gena-tui 0.130.0` still run from PATH.
 
 ## Blockers
-- Code repo local `main` is not pushed yet.
-- Obsidian repo was already ahead of `origin/main` before this session and remains local until pushed.
 - Full workspace `cargo test` was not rerun after the `0.133.0` merge; targeted Codex/Gena gates passed.
 - Real LLMOps smoke is blocked by transport/TLS to `https://devx-copilot.tech` from this machine:
   - catalog `curl` fails before HTTP with `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`;
@@ -68,4 +68,4 @@ Validate upstream Codex `rust-v0.133.0` merge on Gena `main`.
   - no panic/backtrace, no `System message must be at the beginning`, no `OutputTextDelta without active item` observed.
 
 ## Next Step
-Push the 2026-05-25 branding hotfix, then when `devx-copilot.tech` is reachable again rerun real LLMOps catalog + `gena-debug exec` smoke on installed `0.133.0`.
+When `devx-copilot.tech` is reachable again, rerun real LLMOps catalog + `gena-debug exec` smoke on installed `0.133.0`.

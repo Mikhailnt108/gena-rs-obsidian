@@ -1,5 +1,15 @@
 # WORKLOG
 
+## 2026-05-25 — Pushed Gena branding hotfix to `origin/main`
+- User requested commit and push.
+- Code repo:
+  - branch `main`;
+  - working tree was clean before push;
+  - pushed `4fd1181d3e` — `fix: use Gena branding in startup and exit UI`;
+  - `origin/main` advanced from `bcc8041867` to `4fd1181d3e`.
+- No code changes or new tests were run in this session; this was a publication/closeout session for already verified work.
+- Obsidian updated to record the pushed state.
+
 ## 2026-05-25 — Fixed Gena `0.133.0` debug branding leaks in startup and `/exit`
 - User reported `gena-debug 0.133.0` still showed Codex branding:
   - startup banner/header said Codex;
