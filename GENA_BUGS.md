@@ -31,8 +31,30 @@
 | GENA-BUG-016 | release installer может вернуть старый build | fixed by process | `0.120.0` | gate/process |
 | GENA-BUG-017 | `0.128.0` installer отсутствует после upstream merge | fixed by process | `0.128.0` | `0.128.0` artifacts, 2026-05-06 |
 | GENA-BUG-018 | `gena-debug` TUI не запускает prompt для `LLMOPS_TOKEN` и падает на первом запросе | fixed | `0.128.0` debug | `0.128.0`, `c79ac7c704` |
+| GENA-BUG-019 | `0.133.0` debug startup and `/exit` leak Codex branding | fixed | `0.133.0` debug | `4fd1181d3e`, 2026-05-25 |
 
 ## Latest Verification
+
+### 2026-05-25 — `0.133.0` debug branding hotfix
+
+Status: fixed locally; debug install refreshed.
+
+Fixed:
+- startup/session header now renders current product display name instead of hardcoded `OpenAI Codex`;
+- non-interactive `gena-debug exec` config summary banner now renders current product display name;
+- `/quit` and `/exit` command descriptions now render `exit <brand>`.
+
+Verified:
+- `just fmt`;
+- `just fix -p codex-tui -p codex-exec`;
+- `cargo test -p codex-tui session_header_indicates_yolo_mode`;
+- `cargo test -p codex-tui slash_exit_requests_exit`;
+- `cargo test -p codex-exec prints_final_stdout_message_when_stdout_is_not_terminal --lib`;
+- `cargo test -p gena-types detects_brands_from_program_stem`;
+- `CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug`;
+- `gena-debug --version` -> `gena 0.133.0`;
+- `gena-tui-debug --version` -> `gena-tui 0.133.0`;
+- Gena help smoke shows `Gena CLI` and `Usage: gena-tui`.
 
 ### 2026-05-13 — `0.130.0` post-merge debug gate
 
@@ -533,6 +555,48 @@ Verification:
 
 Fixed in:
 - `0.128.0`, `c79ac7c704`.
+
+### GENA-BUG-019 — `0.133.0` debug startup and `/exit` leak Codex branding
+
+Status: `fixed`
+
+Found in: `0.133.0` debug after upstream `rust-v0.133.0` merge.
+
+Symptom:
+- `gena-debug` / `gena-tui-debug` user-visible startup/session header still showed Codex branding.
+- Slash command popup described `/quit` and `/exit` as:
+  - `exit Codex`
+- Non-interactive human output banner also had hardcoded:
+  - `OpenAI Codex v...`
+
+Root cause:
+- Upstream session header and exec human-output banner used hardcoded `OpenAI Codex` text.
+- Slash command descriptions used hardcoded `exit Codex`.
+- These strings were outside the earlier top-level clap branding fixes.
+
+Fix:
+- `codex-rs/tui/src/history_cell/session.rs`
+  - session header display/raw title now uses `ProductBrand::detect_current().display_name()`.
+- `codex-rs/tui/src/slash_command.rs`
+  - `/quit` and `/exit` descriptions now use the current product display name.
+- `codex-rs/exec/src/event_processor_with_human_output.rs`
+  - config summary banner now uses the current product display name.
+- `codex-rs/exec/Cargo.toml`
+  - added `gena-branding`.
+
+Verification:
+- `just fmt` PASS.
+- `just fix -p codex-tui -p codex-exec` PASS.
+- `cargo test -p codex-tui session_header_indicates_yolo_mode` PASS.
+- `cargo test -p codex-tui slash_exit_requests_exit` PASS.
+- `cargo test -p codex-exec prints_final_stdout_message_when_stdout_is_not_terminal --lib` PASS.
+- `cargo test -p gena-types detects_brands_from_program_stem` PASS.
+- `CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug` PASS.
+- `/Users/mntabunkov/.local/bin/gena-debug --version` -> `gena 0.133.0`.
+- `/Users/mntabunkov/.local/bin/gena-tui-debug --version` -> `gena-tui 0.133.0`.
+
+Fixed in:
+- `0.133.0` local hotfix, `4fd1181d3e`.
 
 ## Release Blocking Checklist
 

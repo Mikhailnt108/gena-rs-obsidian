@@ -1,5 +1,35 @@
 # WORKLOG
 
+## 2026-05-25 — Fixed Gena `0.133.0` debug branding leaks in startup and `/exit`
+- User reported `gena-debug 0.133.0` still showed Codex branding:
+  - startup banner/header said Codex;
+  - `/exit` command description said `exit Codex`.
+- Code changes:
+  - code commit `4fd1181d3e` — `fix: use Gena branding in startup and exit UI`;
+  - `codex-rs/tui/src/history_cell/session.rs`
+    - session header display/raw lines now use `ProductBrand::detect_current().display_name()`;
+  - `codex-rs/tui/src/slash_command.rs`
+    - `/quit` and `/exit` descriptions now say `exit <brand>`;
+  - `codex-rs/exec/src/event_processor_with_human_output.rs`
+    - non-interactive config summary banner now uses current product display name;
+  - `codex-rs/exec/Cargo.toml` / `Cargo.lock`
+    - added `gena-branding` dependency for `codex-exec`.
+- Checks passed:
+  - `just fmt`;
+  - `just fix -p codex-tui -p codex-exec`;
+  - `cargo test -p codex-tui session_header_indicates_yolo_mode`;
+  - `cargo test -p codex-tui slash_exit_requests_exit`;
+  - `cargo test -p codex-exec prints_final_stdout_message_when_stdout_is_not_terminal --lib`;
+  - `cargo test -p gena-types detects_brands_from_program_stem`;
+  - `git diff --check`.
+- Debug install refreshed:
+  - `CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug` PASS;
+  - `/Users/mntabunkov/.local/bin/gena-debug --version` -> `gena 0.133.0`;
+  - `/Users/mntabunkov/.local/bin/gena-tui-debug --version` -> `gena-tui 0.133.0`;
+  - help smoke confirms Gena CLI / `gena-tui` usage.
+- Bug registry:
+  - added `GENA-BUG-019`.
+
 ## 2026-05-24 — Upstream Codex `rust-v0.133.0` merged into Gena `main`
 - User requested:
   - update upstream Codex to `0.133.0`;
