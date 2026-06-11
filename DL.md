@@ -4450,3 +4450,19 @@
 **Альтернативы:**
 - Ставить release в `/usr/local/bin`.
 - Только собрать в `/tmp/gena-target-release/release` без install/copy.
+
+## 2026-06-11 — Installer artifact can stay local in ignored `dist`
+**Решение:**
+- Создавать `gena-v0.139.0-macos-arm64-installer.sh` в `codex-rs/dist`, но не коммитить его в git автоматически.
+
+**Причина:**
+- `codex-rs/dist` игнорируется git.
+- Installer и bundle большие (`244M` и `183M`), а пользователь запросил сборку локального артефакта, не публикацию в репозиторий.
+
+**Подтверждение:**
+- `git status` в code repo остался clean после создания `dist/gena-v0.139.0-macos-arm64-installer.sh`.
+- Installer прошел temp install smoke и версии `gena 0.139.0` / `gena-tui 0.139.0`.
+
+**Альтернативы:**
+- Принудительно добавить ignored `dist` артефакты в git.
+- Публиковать installer как GitHub release asset вместо коммита.

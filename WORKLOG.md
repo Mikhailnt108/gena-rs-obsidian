@@ -4567,3 +4567,29 @@
   - release build emitted one warning for unused import `gena_branding::current_cli_command_name` in `cli/src/main.rs`;
   - build completed successfully despite the warning;
   - code repo remained clean after the build.
+
+## 2026-06-11 — Self-extract installer gena 0.139.0
+- User clarified that the required installer artifact is `gena-v0.139.0-macos-arm64-installer.sh`.
+- Existing state:
+  - release binaries already existed from the previous build:
+    - `/tmp/gena-target-release/release/gena`;
+    - `/tmp/gena-target-release/release/gena-tui`;
+  - `codex-rs/dist` still had only old `0.130.0` bundle/installer artifacts.
+- Action:
+  - created `codex-rs/dist/gena-v0.139.0-macos-arm64/` from the existing release binaries;
+  - created `codex-rs/dist/gena-v0.139.0-macos-arm64.tar.gz`;
+  - created `codex-rs/dist/gena-v0.139.0-macos-arm64.tar.gz.sha256`;
+  - ran `codex-rs/scripts/make-gena-self-extract.sh` to create:
+    - `codex-rs/dist/gena-v0.139.0-macos-arm64-installer.sh`.
+- Result:
+  - installer: `codex-rs/dist/gena-v0.139.0-macos-arm64-installer.sh` (244M);
+  - bundle: `codex-rs/dist/gena-v0.139.0-macos-arm64.tar.gz` (183M);
+  - checksum: `b7d18563faa40841112ed61ef97b16bf2cf90606fcbf95319ffea66257e76925`.
+- Verification:
+  - installer `--help` passed;
+  - installer was run with `--install-dir <tmp> --no-path-hint`;
+  - installed temp `gena --version` -> `gena 0.139.0`;
+  - installed temp `gena-tui --version` -> `gena-tui 0.139.0`.
+- Notes:
+  - `codex-rs/dist` artifacts are ignored by git;
+  - code repo remained clean after creating the installer.

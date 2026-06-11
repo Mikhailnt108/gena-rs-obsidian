@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Gena `0.139.0` release build is complete; Obsidian status is being committed.
+Gena `0.139.0` release installer is built and verified.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -20,6 +20,10 @@ Gena `0.139.0` release build is complete; Obsidian status is being committed.
   - `/Users/mntabunkov/.local/bin/gena-tui-release` -> `gena-tui 0.139.0`;
   - release binaries copied to `/Users/mntabunkov/download/gena-release` and `/Users/mntabunkov/download/gena-tui-release`;
   - build target: `/tmp/gena-target-release/release`.
+- Installer artifact created on 2026-06-11:
+  - `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project/codex-rs/dist/gena-v0.139.0-macos-arm64-installer.sh` (244M);
+  - bundle `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project/codex-rs/dist/gena-v0.139.0-macos-arm64.tar.gz` (183M);
+  - checksum `b7d18563faa40841112ed61ef97b16bf2cf90606fcbf95319ffea66257e76925`.
 - Main compatibility resolutions:
   - kept Gena deletions for upstream workflow/setup files that were removed locally;
   - preserved Gena branding for `/exit`/`/quit` descriptions;
@@ -68,6 +72,11 @@ Gena `0.139.0` release build is complete; Obsidian status is being committed.
   - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh release`;
   - `gena-release --version`, `gena-tui-release --version`, and download-copy version checks passed;
   - `gena-release --help` and `gena-tui-release --help` passed.
+- Installer verification passed:
+  - `gena-v0.139.0-macos-arm64-installer.sh --help`;
+  - temp install with `--install-dir <tmp> --no-path-hint`;
+  - temp-installed `gena --version` -> `gena 0.139.0`;
+  - temp-installed `gena-tui --version` -> `gena-tui 0.139.0`.
 
 ## Blockers
 - Full workspace/core reruns were intentionally stopped after user asked to finish with tests and check only failed tests individually.
@@ -78,6 +87,7 @@ Gena `0.139.0` release build is complete; Obsidian status is being committed.
   - no panic/backtrace, no `System message must be at the beginning`, no `OutputTextDelta without active item` observed.
 - Manual interactive TUI prompt smoke was not run in this non-interactive CLI session; help/version smoke passed for `gena-tui-debug`.
 - Release build emitted an unused-import warning for `gena_branding::current_cli_command_name` in `cli/src/main.rs`; build still succeeded.
+- `codex-rs/dist` is ignored by git, so the installer exists locally but was not committed to the code repository.
 
 ## Next Step
 Commit/push this Obsidian update. When `devx-copilot.tech` is reachable again, rerun real LLMOps catalog + `gena-release exec` smoke on installed `0.139.0`, and run an interactive `gena-tui-release` prompt smoke in a real terminal.
