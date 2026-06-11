@@ -4528,3 +4528,42 @@
   - direct catalog `curl` to `https://devx-copilot.tech/v1/models` fails TLS before HTTP;
   - `gena-debug exec --oss --local-provider llmops ...` with token reaches runtime but fails after retries with transport disconnect;
   - no panic/backtrace or Chat Completions contract-shape error observed.
+
+## 2026-06-11 — Release build gena 0.139.0
+- User requested a release build for `gena 0.139.0`.
+- START SESSION context was read:
+  - code `AGENTS.md`;
+  - Obsidian `NOW.md`;
+  - Obsidian `PROCESS.md`;
+  - code repo branch/status/log.
+- Code repo state:
+  - branch `main`;
+  - clean against `origin/main`;
+  - latest code commit `d3fcb2e799 test: stabilize upstream 0.139 merge`.
+- Action:
+  - ran `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh release`;
+  - used `/tmp/gena-target-release` as release target via the script default;
+  - installed user-local release wrappers in `/Users/mntabunkov/.local/bin`;
+  - copied release binaries to `/Users/mntabunkov/download`.
+- Result:
+  - installed:
+    - `/Users/mntabunkov/.local/bin/gena-release`;
+    - `/Users/mntabunkov/.local/bin/gena-release.bin` (267M);
+    - `/Users/mntabunkov/.local/bin/gena-tui-release`;
+    - `/Users/mntabunkov/.local/bin/gena-tui-release.bin` (240M);
+  - download copies:
+    - `/Users/mntabunkov/download/gena-release` (267M);
+    - `/Users/mntabunkov/download/gena-tui-release` (240M);
+  - target binaries:
+    - `/tmp/gena-target-release/release/gena`;
+    - `/tmp/gena-target-release/release/gena-tui`.
+- Verification:
+  - `/Users/mntabunkov/.local/bin/gena-release --version` -> `gena 0.139.0`;
+  - `/Users/mntabunkov/.local/bin/gena-tui-release --version` -> `gena-tui 0.139.0`;
+  - `/Users/mntabunkov/download/gena-release --version` -> `gena 0.139.0`;
+  - `/Users/mntabunkov/download/gena-tui-release --version` -> `gena-tui 0.139.0`;
+  - `gena-release --help` and `gena-tui-release --help` completed successfully.
+- Notes:
+  - release build emitted one warning for unused import `gena_branding::current_cli_command_name` in `cli/src/main.rs`;
+  - build completed successfully despite the warning;
+  - code repo remained clean after the build.

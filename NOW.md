@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Upstream Codex `rust-v0.139.0` is merged into Gena `main`; final status is code/Obsidian commit and push.
+Gena `0.139.0` release build is complete; Obsidian status is being committed.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -15,6 +15,11 @@ Upstream Codex `rust-v0.139.0` is merged into Gena `main`; final status is code/
   - `/Users/mntabunkov/.local/bin/gena-debug` -> `gena 0.139.0`;
   - `/Users/mntabunkov/.local/bin/gena-tui-debug` -> `gena-tui 0.139.0`;
   - copies also written to `/Users/mntabunkov/download/`.
+- Local release install refreshed on 2026-06-11:
+  - `/Users/mntabunkov/.local/bin/gena-release` -> `gena 0.139.0`;
+  - `/Users/mntabunkov/.local/bin/gena-tui-release` -> `gena-tui 0.139.0`;
+  - release binaries copied to `/Users/mntabunkov/download/gena-release` and `/Users/mntabunkov/download/gena-tui-release`;
+  - build target: `/tmp/gena-target-release/release`.
 - Main compatibility resolutions:
   - kept Gena deletions for upstream workflow/setup files that were removed locally;
   - preserved Gena branding for `/exit`/`/quit` descriptions;
@@ -59,6 +64,10 @@ Upstream Codex `rust-v0.139.0` is merged into Gena `main`; final status is code/
   - `just fix -p codex-core` passed;
   - `git diff --check` passed.
 - `just fix -p codex-core` emitted one upstream test warning for `clippy::expect_used` in `core/tests/suite/shell_command.rs`, but returned exit code 0.
+- Release build command passed:
+  - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh release`;
+  - `gena-release --version`, `gena-tui-release --version`, and download-copy version checks passed;
+  - `gena-release --help` and `gena-tui-release --help` passed.
 
 ## Blockers
 - Full workspace/core reruns were intentionally stopped after user asked to finish with tests and check only failed tests individually.
@@ -68,6 +77,7 @@ Upstream Codex `rust-v0.139.0` is merged into Gena `main`; final status is code/
   - `LLMOPS_TOKEN="$(cat ~/.gena-codex/provider_tokens/LLMOPS_TOKEN)" gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ...` reaches runtime, retries 5/5, then fails with `stream disconnected before completion: error sending request for url (https://devx-copilot.tech/v1/chat/completions)`;
   - no panic/backtrace, no `System message must be at the beginning`, no `OutputTextDelta without active item` observed.
 - Manual interactive TUI prompt smoke was not run in this non-interactive CLI session; help/version smoke passed for `gena-tui-debug`.
+- Release build emitted an unused-import warning for `gena_branding::current_cli_command_name` in `cli/src/main.rs`; build still succeeded.
 
 ## Next Step
-Commit/push the final code test-stabilization changes and this Obsidian update. When `devx-copilot.tech` is reachable again, rerun real LLMOps catalog + `gena-debug exec` smoke on installed `0.139.0`, and run an interactive `gena-tui-debug` prompt smoke in a real terminal.
+Commit/push this Obsidian update. When `devx-copilot.tech` is reachable again, rerun real LLMOps catalog + `gena-release exec` smoke on installed `0.139.0`, and run an interactive `gena-tui-release` prompt smoke in a real terminal.

@@ -4429,3 +4429,24 @@
 **Альтернативы:**
 - Продолжить полный `cargo test --workspace` до полностью зеленого результата.
 - Продолжить полный `cargo test -p codex-core --test all` после каждого test harness изменения.
+
+## 2026-06-11 — Release build ставить user-local, не в `/usr/local/bin`
+**Решение:**
+- Для локальной release-сборки `gena 0.139.0` использовать:
+  - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin"`;
+  - `codex-rs/scripts/build-and-install-gena.sh release`.
+- Оставлять копии release binaries в `/Users/mntabunkov/download`.
+
+**Причина:**
+- Скрипт по умолчанию для release ставит в `/usr/local/bin`, что требует системных прав и может конфликтовать с уже установленными командами.
+- User-local install согласован с предыдущей debug-сборкой и не меняет системный PATH за пределами уже используемого `$HOME/.local/bin`.
+
+**Подтверждение:**
+- `/Users/mntabunkov/.local/bin/gena-release --version` -> `gena 0.139.0`.
+- `/Users/mntabunkov/.local/bin/gena-tui-release --version` -> `gena-tui 0.139.0`.
+- `/Users/mntabunkov/download/gena-release --version` -> `gena 0.139.0`.
+- `/Users/mntabunkov/download/gena-tui-release --version` -> `gena-tui 0.139.0`.
+
+**Альтернативы:**
+- Ставить release в `/usr/local/bin`.
+- Только собрать в `/tmp/gena-target-release/release` без install/copy.
