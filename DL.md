@@ -4408,3 +4408,24 @@
 - Перенести `AGENTS.md` из user-context в developer-context.
 - Добавить явный startup task при открытии TUI.
 - Оставить как есть и считать START SESSION обязанностью первого модельного хода после prompt.
+
+## 2026-06-11 — После 0.139.0 merge не гонять полный test loop бесконечно
+**Решение:**
+- После того как полный `codex-core --test all` дошел до нескольких load-sensitive failures, а пользователь попросил заканчивать с тестами, прекратить дальнейшие полные rerun циклы.
+- Проверять только последние упавшие тесты по отдельности, затем делать обязательные `just fmt`, `just fix -p codex-core`, `git diff --check`, коммит и пуш.
+
+**Причина:**
+- Большая часть workspace/core уже была пройдена в нескольких прогонах.
+- Оставшиеся failures воспроизводились как нагрузочные/ordering/timeouts и проходили изолированно после точечных test harness правок.
+- Продолжение полных rerun циклов тратит много времени и диска, а пользователь явно попросил остановить такой режим.
+
+**Подтверждение:**
+- Последние упавшие тесты прошли индивидуально:
+  - `suite::approvals::spawned_subagent_execpolicy_amendment_propagates_to_parent_session`;
+  - `suite::subagent_notifications::encrypted_multi_agent_v2_spawn_sends_agent_message_to_child`;
+  - `suite::unified_exec::unified_exec_emits_exec_command_end_event`.
+- `just fmt`, `just fix -p codex-core`, `git diff --check` прошли.
+
+**Альтернативы:**
+- Продолжить полный `cargo test --workspace` до полностью зеленого результата.
+- Продолжить полный `cargo test -p codex-core --test all` после каждого test harness изменения.

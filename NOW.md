@@ -1,7 +1,7 @@
 # NOW
 
 ## Current Goal
-Validate upstream Codex `rust-v0.139.0` merge on Gena `main`.
+Upstream Codex `rust-v0.139.0` is merged into Gena `main`; final status is code/Obsidian commit and push.
 
 ## State
 - Code repo: `/Users/mntabunkov/my_github_projects/gena-rs/gena-rs-project`.
@@ -44,10 +44,24 @@ Validate upstream Codex `rust-v0.139.0` merge on Gena `main`.
   - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug`;
   - `gena-debug --version`, `gena-debug --help`, `gena-debug plugin --help`;
   - `gena-tui-debug --version`, `gena-tui-debug --help`.
+- Post-merge test stabilization was done after initial full-test failures:
+  - added `aqa-codex` and `gena` doctor snapshots because `cargo test --workspace` runs all bin targets sharing `cli/src/main.rs`;
+  - widened load-sensitive event/hook/test deadlines in app-server and core tests;
+  - isolated git tests from global/system git config;
+  - updated code-mode truncation expectations for upstream truncation policy behavior;
+  - adjusted subagent/unified-exec tests to avoid exact request ordering and short event waits.
+- After user asked to stop full reruns, the last failed tests were checked individually and passed:
+  - `CARGO_BUILD_JOBS=4 RUST_MIN_STACK=16777216 cargo test -p codex-core --test all suite::approvals::spawned_subagent_execpolicy_amendment_propagates_to_parent_session -- --nocapture`;
+  - `CARGO_BUILD_JOBS=4 RUST_MIN_STACK=16777216 cargo test -p codex-core --test all suite::subagent_notifications::encrypted_multi_agent_v2_spawn_sends_agent_message_to_child -- --nocapture`;
+  - `CARGO_BUILD_JOBS=4 RUST_MIN_STACK=16777216 cargo test -p codex-core --test all suite::unified_exec::unified_exec_emits_exec_command_end_event -- --nocapture`.
+- Final local checks after these edits:
+  - `just fmt` passed;
+  - `just fix -p codex-core` passed;
+  - `git diff --check` passed.
 - `just fix -p codex-core` emitted one upstream test warning for `clippy::expect_used` in `core/tests/suite/shell_command.rs`, but returned exit code 0.
 
 ## Blockers
-- Full workspace `cargo test` was not run; user approval is required for full workspace test by `AGENTS.md`.
+- Full workspace/core reruns were intentionally stopped after user asked to finish with tests and check only failed tests individually.
 - Real LLMOps smoke is blocked by transport/TLS to `https://devx-copilot.tech` from this machine:
   - catalog `curl` fails before HTTP with `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`;
   - `gena-debug exec --oss --local-provider llmops ...` without env token fails with `Missing environment variable: LLMOPS_TOKEN`;
@@ -56,4 +70,4 @@ Validate upstream Codex `rust-v0.139.0` merge on Gena `main`.
 - Manual interactive TUI prompt smoke was not run in this non-interactive CLI session; help/version smoke passed for `gena-tui-debug`.
 
 ## Next Step
-When `devx-copilot.tech` is reachable again, rerun real LLMOps catalog + `gena-debug exec` smoke on installed `0.139.0`, and run an interactive `gena-tui-debug` prompt smoke in a real terminal.
+Commit/push the final code test-stabilization changes and this Obsidian update. When `devx-copilot.tech` is reachable again, rerun real LLMOps catalog + `gena-debug exec` smoke on installed `0.139.0`, and run an interactive `gena-tui-debug` prompt smoke in a real terminal.

@@ -4493,3 +4493,38 @@
   - `/System/Volumes/Data` free space increased to 155 GiB;
   - `/Users/mntabunkov/.gradle` and `/Users/mntabunkov/.cache` no longer exist;
   - code repo has no tracked changes.
+
+## 2026-06-11 — Upstream rust-v0.139.0 merge stabilization
+- User requested updating upstream to `0.139.0`, fixing conflicts/bugs, merging into `main`, building `gena-debug`, and testing.
+- Code repo:
+  - merged upstream tag `rust-v0.139.0` (`a7dff90430`) into `main`;
+  - pushed merge commit `c5edc3a4f1` (`Merge tag 'rust-v0.139.0'`) to `origin/main`;
+  - preserved Gena branding/default LLMOps path and adapted Gena runtime to upstream 0.139 APIs.
+- Disk:
+  - full test/build work initially hit `errno=28`;
+  - deleted `codex-rs/target` and `~/.cache/sccache` per user instruction;
+  - rebuild proceeded with sufficient free disk.
+- Debug build:
+  - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug` passed;
+  - installed `gena-debug 0.139.0` and `gena-tui-debug 0.139.0`;
+  - copies written to `/Users/mntabunkov/download/`.
+- Test stabilization committed in the code repo working tree before final commit:
+  - added missing `codex doctor` snapshots for `aqa-codex` and `gena` bin targets;
+  - widened load-sensitive test waits in app-server/core test suites;
+  - isolated git test config from user/global git config;
+  - adjusted code-mode truncation expectations for upstream truncation policy behavior;
+  - made subagent/unified-exec tests less dependent on short event deadlines and exact request ordering.
+- Verification run after stabilization:
+  - `just fmt` passed;
+  - `just fix -p codex-core` passed;
+  - `git diff --check` passed;
+  - targeted last-failure tests passed individually:
+    - `suite::approvals::spawned_subagent_execpolicy_amendment_propagates_to_parent_session`;
+    - `suite::subagent_notifications::encrypted_multi_agent_v2_spawn_sends_agent_message_to_child`;
+    - `suite::unified_exec::unified_exec_emits_exec_command_end_event`.
+- User explicitly asked to stop full test reruns and validate failed tests individually; no further full workspace/core test run was started after that.
+- Real LLMOps smoke:
+  - token sidecar exists;
+  - direct catalog `curl` to `https://devx-copilot.tech/v1/models` fails TLS before HTTP;
+  - `gena-debug exec --oss --local-provider llmops ...` with token reaches runtime but fails after retries with transport disconnect;
+  - no panic/backtrace or Chat Completions contract-shape error observed.
