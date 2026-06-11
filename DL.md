@@ -1,5 +1,32 @@
 # DL
 
+## 2026-06-11 — `rust-v0.139.0` merge можно считать опубликованным, но live LLMOps smoke остаётся внешне заблокированным
+**Решение:**
+- Считать upstream merge `rust-v0.139.0` интегрированным и опубликованным в `origin/main` после зелёных targeted Codex/Gena gates, `just fix`, debug build/install и help/version smoke.
+- Не считать real LLMOps smoke зелёным, пока `https://devx-copilot.tech` недоступен с машины на TLS/transport layer.
+- Не классифицировать текущий `gena-debug exec` failure как Gena regression без успешного HTTP-доступа к LLMOps endpoint.
+
+**Причина:**
+- Независимый catalog `curl` к `https://devx-copilot.tech/v1/models` падает до HTTP-ответа:
+  - `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`.
+- `gena-debug exec` с `LLMOPS_TOKEN` из sidecar-файла доходит до runtime и делает retry 5/5, но все попытки завершаются transport error:
+  - `stream disconnected before completion: error sending request for url (https://devx-copilot.tech/v1/chat/completions)`.
+- В captured events не обнаружены известные contract failures:
+  - `System message must be at the beginning`;
+  - `OutputTextDelta without active item`;
+  - panic/backtrace.
+
+**Подтверждение:**
+- `main` pushed to `c5edc3a4f1` — `Merge tag 'rust-v0.139.0'`.
+- Targeted tests, `just fix`, and `gena-debug` build/install passed.
+- `gena-debug --version` reports `gena 0.139.0`.
+- `gena-tui-debug --version` reports `gena-tui 0.139.0`.
+
+**Альтернативы:**
+- Блокировать push to `main` до восстановления внешнего LLMOps endpoint.
+- Считать transport failure live smoke как Gena bug immediately.
+- Не запускать real smoke после debug install и ограничиться unit/integration gates.
+
 ## 2026-05-24 — `rust-v0.133.0` merge можно держать в local `main`, но live LLMOps smoke не считать зелёным при TLS/transport failure
 **Решение:**
 - Считать upstream merge `rust-v0.133.0` технически интегрированным в local `main` после зелёных targeted Codex/Gena gates и debug build.

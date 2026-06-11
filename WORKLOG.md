@@ -1,5 +1,60 @@
 # WORKLOG
 
+## 2026-06-11 — Upstream Codex `rust-v0.139.0` merged and pushed to Gena `main`
+- User requested:
+  - update upstream Codex to `0.139.0`;
+  - resolve conflicts and bugs;
+  - merge into `main`;
+  - build and test `gena-debug`.
+- Code repo:
+  - branch `main`;
+  - fetched upstream tag `rust-v0.139.0` (`a7dff90430`);
+  - merged and resolved conflicts;
+  - pushed merge commit `c5edc3a4f1` — `Merge tag 'rust-v0.139.0'`;
+  - `origin/main` advanced from `4fd1181d3e` to `c5edc3a4f1`.
+- Main compatibility resolutions:
+  - kept Gena local deletions for removed upstream workflow/setup files;
+  - preserved Gena `/exit` and `/quit` branding;
+  - preserved Gena default LLMOps provider path in TUI startup;
+  - adapted Gena runtime bootstrap/config to upstream `CloudConfigBundleLoader`;
+  - adapted Gena runtime config edits after upstream removed profile-scoped `ConfigEditsBuilder::with_profile`;
+  - adapted memory clearing, thread fork, and turn `cwd` override to upstream APIs;
+  - added new upstream `ModelInfo` fields in Gena fallback model metadata;
+  - preserved Gena Chat Completions logging while keeping upstream responses-lite behavior.
+- Checks passed:
+  - `cargo metadata --format-version 1 --no-deps`;
+  - `CARGO_BUILD_JOBS=4 cargo check -p codex-cli -p codex-tui -p codex-exec -p codex-models-manager -p gena-runtime -p gena-upstream-adapter`;
+  - `just fmt`;
+  - `just fix -p codex-api && just fix -p codex-models-manager && just fix -p codex-model-provider && just fix -p gena-runtime && just fix -p gena-upstream-adapter && just fix -p codex-tui && just fix -p codex-cli && just fix -p codex-core`;
+  - `git diff --check`;
+  - `cargo test -p codex-cli top_level_`;
+  - `cargo test -p codex-tui top_level_`;
+  - `cargo test -p codex-tui store_prompted_provider_token --lib`;
+  - `cargo test -p gena-types detects_brands_from_program_stem`;
+  - `cargo test -p gena-runtime startup_model_tests`;
+  - `cargo test -p gena-runtime gena_model_list_keeps_full_llmops_catalog_when_current_model_is_configured`;
+  - `cargo test -p gena-runtime`;
+  - `cargo test -p codex-api parses_openai_compatible_models_response`;
+  - `cargo test -p codex-api parses_models_response`;
+  - `RUST_MIN_STACK=16777216 cargo test -p codex-core --test all suite::client::chat_completions_text_before_tool_call_runs_tool_loop_to_completion -- --nocapture`;
+  - `cargo test -p codex-api endpoint::chat_completions::tests`.
+- `just fix -p codex-core` emitted one upstream test warning for `clippy::expect_used` in `core/tests/suite/shell_command.rs`, but returned exit code 0.
+- Debug install:
+  - `GENA_GLOBAL_BIN_DIR="$HOME/.local/bin" CARGO_BUILD_JOBS=4 codex-rs/scripts/build-and-install-gena.sh debug` PASS;
+  - installed `/Users/mntabunkov/.local/bin/gena-debug` -> `gena 0.139.0`;
+  - installed `/Users/mntabunkov/.local/bin/gena-tui-debug` -> `gena-tui 0.139.0`;
+  - copies also written to `/Users/mntabunkov/download/`;
+  - help/version smoke passed for `gena-debug`, `gena-debug plugin`, and `gena-tui-debug`.
+- Real LLMOps smoke:
+  - sidecar token exists at `~/.gena-codex/provider_tokens/LLMOPS_TOKEN`;
+  - catalog `curl` to `https://devx-copilot.tech/v1/models` failed before HTTP with `LibreSSL SSL_connect: SSL_ERROR_SYSCALL`;
+  - `gena-debug exec --oss --local-provider llmops ...` without env token failed with `Missing environment variable: LLMOPS_TOKEN`;
+  - `LLMOPS_TOKEN="$(cat ~/.gena-codex/provider_tokens/LLMOPS_TOKEN)" gena-debug exec --oss --local-provider llmops -m qwen3.5-35b-a3b ... 'Ответь ровно одним словом: OK'` reached runtime, retried 5/5, then failed with `stream disconnected before completion: error sending request for url (https://devx-copilot.tech/v1/chat/completions)`;
+  - no panic/backtrace or known Chat Completions contract errors were observed in captured events.
+- Notes:
+  - full workspace `cargo test` was not run because it requires explicit user approval;
+  - manual interactive TUI prompt smoke was not run in this non-interactive CLI session.
+
 ## 2026-05-25 — Pushed Gena branding hotfix to `origin/main`
 - User requested commit and push.
 - Code repo:
