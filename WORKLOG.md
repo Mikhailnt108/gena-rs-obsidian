@@ -4593,3 +4593,29 @@
 - Notes:
   - `codex-rs/dist` artifacts are ignored by git;
   - code repo remained clean after creating the installer.
+
+## 2026-06-14 — Removed stale gena 0.130.0
+- User reported that plain `gena` showed `0.130.0` while `gena-debug` showed `0.139.0`.
+- START SESSION context was read:
+  - code `AGENTS.md`;
+  - Obsidian `NOW.md`;
+  - Obsidian `PROCESS.md`;
+  - code repo branch/status/log.
+- Diagnosis:
+  - `codex-rs/dist` contained both old `0.130.0` and new `0.139.0` artifacts;
+  - `command -v gena` resolved to `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`;
+  - that NVM shim executed adjacent `gena.bin` and reported `gena 0.130.0`;
+  - `gena-debug` and `gena-release` both reported `gena 0.139.0`;
+  - the `0.139.0` self-extract installer payload was rechecked with a temp install and produced `gena 0.139.0` and `gena-tui 0.139.0`.
+- Action:
+  - removed `codex-rs/dist/gena-v0.130.0-macos-arm64*`;
+  - removed stale `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena`;
+  - removed stale `/Users/mntabunkov/.nvm/versions/node/v22.22.2/bin/gena.bin`.
+- Verification:
+  - `codex-rs/dist` now contains only `0.139.0` artifacts;
+  - `gena --version` -> `gena 0.139.0`;
+  - `gena-debug --version` -> `gena 0.139.0`;
+  - `gena-release --version` -> `gena 0.139.0`.
+- Notes:
+  - no tracked code files changed;
+  - deleted `dist` artifacts are ignored by git.
